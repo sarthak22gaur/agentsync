@@ -1,0 +1,29 @@
+# {{PROJECT_NAME}}
+
+{{PROJECT_DESCRIPTION}}
+
+## Workspace
+
+- Languages: {{LANGUAGES}}
+- Default base branch: `{{BASE_BRANCH}}`
+- Repo shape: {{REPO_SHAPE}}
+
+## Agents
+
+| Agent | Role |
+|---|---|
+| architect | Design authority — plans, ADRs, system boundaries |
+| code-reviewer | Plan-driven review against project conventions |
+| librarian | Keeps `agents/` source-of-truth in sync with reality |
+| engineer | Implements features and fixes |
+
+## Skills
+
+- `grill-plan` — stress-test plans before execution
+- `{{PROJECT_NAME}}-ground-truth` — single source of truth for the project
+
+## Conventions
+
+- No AI attribution in commits or PR bodies.
+- Plan before code: architect plan + user approval before non-trivial implementation.
+- Source of truth for agents/skills is `agents/`. Edit there, then run `bash agents/scripts/sync_agents.sh`.

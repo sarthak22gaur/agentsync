@@ -1,0 +1,31 @@
+# agents/ — Source of Truth
+
+This directory is the canonical home for agents, skills, and rules in **{{PROJECT_NAME}}**. The contents of `.claude/`, `.codex/`, and `.opencode/` at the repo root are **generated** from here.
+
+## Editing
+
+1. Edit files in `agents/claude/`, `agents/codex/`, `agents/opencode/`, `agents/skills/`, or `agents/rules/`.
+2. Run `bash agents/scripts/sync_agents.sh` to fan changes out to all surfaces.
+3. Commit both `agents/` and the synced `.claude/` etc. directories.
+
+## Layout
+
+```
+agents/
+  AGENTS.md          # workspace overview (rendered to repo root)
+  claude/
+    CLAUDE.md        # Claude system prompt
+    agents/          # Claude agent definitions (markdown)
+    rules/           # Hard rules surfaced to Claude
+  codex/
+    agents/          # Codex agent TOMLs
+    configs/         # Codex config fragments
+  opencode/
+    agents/          # OpenCode agent markdown
+  skills/            # Universal skills (consumed by all surfaces)
+  scripts/           # Sync scripts
+```
+
+## Never edit `.claude/`, `.codex/`, or `.opencode/` directly
+
+They are regenerated on every sync. Your edits will be lost.
