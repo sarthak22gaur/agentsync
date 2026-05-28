@@ -2,6 +2,13 @@
 
 Notable changes per release. Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning is [SemVer](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.1] - 2026-05-28
+
+### Added
+- "Generated with agentsync" attribution line in the rendered `agents/README.md`, linking back to the project.
+- Driver artifact guardrail (both modes): an explicit allowed-artifact set plus hard prohibitions against installing git hooks, writing under `.git/`, modifying git config, or creating any script/config/tooling outside the template set. Closes a class of bug where the driver invented non-template files (e.g. an `.git/hooks/pre-commit` and a matching `check_sync.sh`) and falsely attributed them to agentsync.
+- Reconcile gains a fifth audit class — **foreign artifacts** — that surfaces things which look agentsync-installed but ship in no version (including leftovers in untracked locations like `.git/hooks/` that survive `git restore`). These are reported, never adopted or repaired; the driver must not invent a missing file an orphaned artifact references.
+
 ## [0.2.0] - 2026-05-28
 
 ### Added

@@ -219,6 +219,10 @@ Compare and collect findings. Do NOT fix yet.
 **4. Content drift in agents/skills** — the template stubs may have improved since scaffolding:
 - New hard directives or rules added to template agents that the project's customized agents lack. Propose **merging** the new directive in, preserving the user's project-specific role prose.
 
+**5. Foreign artifacts** — things that look agentsync-installed but are not in the template set:
+- Git hooks, scripts, or config stamped with "agentsync" attribution that no agentsync version ships (e.g. a `.git/hooks/pre-commit` calling a nonexistent `check_sync.sh`). Check untracked locations like `.git/hooks/` — they survive `git restore` and outlive prior runs.
+- **Report these, do not adopt or repair them.** Never invent the missing file an orphaned artifact references. See the Artifact guardrail in Hard Rules.
+
 ## R3 — Report
 
 Present a single findings table before touching anything:
@@ -237,6 +241,9 @@ Present a single findings table before touching anything:
 
 ### Content drift (template improvements)
 - [ ] <agent/skill> missing <directive> → <propose merge>
+
+### Foreign artifacts (report only — do not adopt)
+- [ ] <artifact> looks agentsync-installed but ships in no version → flag for the user to remove
 
 ### Nothing to do
 - <list what's already healthy>
@@ -272,3 +279,21 @@ Then report what changed, what was intentionally left alone, and any findings th
 - Templates in the agentsync templates directory are read-only at runtime. To evolve them, the user edits there directly.
 - No AI attribution in any generated file.
 - When in doubt during ground-truth generation or refresh, write less. Stub sections the user can fill in are fine; invented prose is not.
+
+## Artifact guardrail (both modes)
+
+The driver may create **only** these artifacts. Anything else is out of bounds.
+
+**Allowed:**
+- Files copied/rendered from the agentsync template set (`templates/**`): the sync scripts, agent/skill/rule templates, `agentsync.conf`, `README`, `AGENTS.md`, and the agentsync block in the root `.gitignore`.
+- The generated `<project>-ground-truth` skill and up to two `<area>-patterns` skills (the sanctioned generation step in Step 3 / R3).
+
+**Never:**
+- Install git hooks, write anything under `.git/`, or modify git configuration (`core.hooksPath`, etc.).
+- Create scripts, config, or tooling that is not in the template set.
+- Stamp "agentsync" / "Auto-installed by agentsync" — or any tool attribution — on anything the tool does not actually ship. (The only sanctioned attribution is the "Generated with agentsync" line in the rendered `agents/README.md`.)
+
+**Pre-existing non-template artifacts (reconcile / adoption):**
+- If the target project contains an artifact that references a missing agentsync file (e.g. an orphaned `.git/hooks/pre-commit` calling a nonexistent `check_sync.sh`), do **NOT** silently satisfy it by inventing the file. **Report it as a finding and ask.**
+- Leftover artifacts from prior runs — especially in untracked locations like `.git/hooks/` that survive `git restore` — must be **surfaced**, not perpetuated. Treat "looks agentsync-installed but isn't in the template set" as a red flag to report, not adopt.
+- If a hook (or similar) is genuinely wanted, it belongs in a future template version (tracked, consented, distributed via `core.hooksPath` to a tracked dir) — never improvised at run time.

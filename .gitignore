@@ -19,3 +19,6 @@ tmp/
 # Smoke-test / scratch output (never commit generated scaffolds)
 /scratch/
 /tmp-smoke/
+
+# Internal planning specs (not shipped)
+/docs/specs/
