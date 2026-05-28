@@ -118,6 +118,7 @@ agents/
 │       └── SKILL.md
 └── scripts/
     ├── _lib.sh
+    ├── apply_gitignore.sh
     ├── sync_agents.sh
     ├── sync_claude.sh
     ├── sync_codex.sh
@@ -145,9 +146,14 @@ One optional file, `agents/agentsync.conf` (sourced by the sync scripts):
 # Where the Claude system prompt is written, relative to workspace root.
 # Default: .claude/CLAUDE.md   |   Common alternative: CLAUDE.md (repo root)
 CLAUDE_MD_TARGET=".claude/CLAUDE.md"
+
+# Which generated output git tracks.
+OUTPUT_TRACKING="root-docs"
 ```
 
-Absent file means the default. Set `CLAUDE_MD_TARGET="CLAUDE.md"` to write the system prompt to the repo root instead.
+Absent file means the defaults. Set `CLAUDE_MD_TARGET="CLAUDE.md"` to write the system prompt to the repo root instead.
+
+`OUTPUT_TRACKING` decides which generated output git tracks; agentsync keeps a delimited block in your `.gitignore` to match and leaves the rest of the file alone. `all` commits everything (the 0.1.0 behavior); `root-docs` (default) commits the entrypoint docs (`CLAUDE.md`, `AGENTS.md`, `.github/copilot-instructions.md`) and gitignores the bulky regenerable dirs (`.claude/`, `.codex/`, `.opencode/`, `.github/agents/`, `.agents/`); `none` gitignores all generated output so only `agents/` is tracked.
 
 ## Prior art and how this differs
 

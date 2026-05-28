@@ -28,4 +28,6 @@ if [[ -f "$AGENTS_DIR/AGENTS.md" ]]; then
     echo "Wrote $WORKSPACE_ROOT/AGENTS.md"
 fi
 
+"$SCRIPT_DIR/apply_gitignore.sh"
+
 echo "Sync complete."
