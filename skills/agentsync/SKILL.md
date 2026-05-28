@@ -38,7 +38,8 @@ Ask the user the following. Provide defaults; one question at a time only if any
 | `project_description` | (ask) | One sentence — what the project is |
 | `primary_languages` | inferred from manifest files | List: `python`, `typescript`, `go`, `rust`, `ruby`, `java`, etc. |
 | `base_branch` | `main` | `develop` if a `develop` branch already exists |
-| `client_surfaces` | `claude,codex,opencode` | Comma-separated; user can drop any |
+| `client_surfaces` | `claude,codex,opencode` | Comma-separated; user can drop any. `github` (Copilot) is opt-in — add it explicitly. |
+| `claude_md_target` | `.claude/CLAUDE.md` | Where `CLAUDE.md` is written. Offer root `CLAUDE.md` as an alternative. |
 | `repo_shape` | detected | `single` or `multi` |
 
 Inference rules:
@@ -63,7 +64,9 @@ Copy the agentsync templates directory (see the path noted at the top of this sk
 | `{{LANGUAGES}}` | comma-joined `primary_languages` |
 | `{{REPO_SHAPE}}` | `single` or `multi` |
 
-Drop surface dirs the user opted out of (e.g., if `client_surfaces` excludes `opencode`, delete `agents/opencode/` and its sync script reference).
+Drop surface dirs the user opted out of (e.g., if `client_surfaces` excludes `opencode`, delete `agents/opencode/` and its sync script reference). `github/` is opt-in — keep it only if the user selected `github`, otherwise delete `agents/github/`.
+
+Write `agents/agentsync.conf` from `templates/agentsync.conf` with the chosen `CLAUDE_MD_TARGET`. Leaving it at the default (`.claude/CLAUDE.md`) is fine; the file is optional and absent means the default.
 
 Make sync scripts executable: `chmod +x agents/scripts/*.sh`.
 
@@ -151,6 +154,7 @@ Print:
 - .claude/  (Claude Code)
 - .codex/   (Codex)
 - .opencode/ (OpenCode)
+- .github/  (GitHub Copilot) — if selected
 
 ### Agents (4)
 - architect, code-reviewer, librarian, engineer
@@ -183,7 +187,7 @@ This is an **audit → report → approve → apply** loop, not a re-scaffold. N
 Read what's there:
 - `agents/` tree: which agents, skills, rules, surfaces, scripts exist.
 - `agents/skills/*-ground-truth/SKILL.md`: the current ground-truth.
-- The synced targets: `.claude/`, `.codex/`, `.opencode/`, `.agents/skills/`, root `AGENTS.md`.
+- The synced targets: `.claude/`, `.codex/`, `.opencode/`, `.github/`, `.agents/skills/`, root `AGENTS.md`.
 
 ## R2 — Audit against four gap classes
 
@@ -191,7 +195,8 @@ Compare and collect findings. Do NOT fix yet.
 
 **1. Structural gaps** — diff the live `agents/` tree against the template baseline in the agentsync templates directory:
 - Missing role agents (e.g. template has `engineer`, project lacks it).
-- Missing surfaces (e.g. project has `claude/` + `codex/` but not `opencode/`, and the user wants all three).
+- Missing surfaces (e.g. project has `claude/` + `codex/` but not `opencode/`, and the user wants all three). `github/` is opt-in — only flag it as missing if the user uses Copilot.
+- Read `agents/agentsync.conf` if present: a root-`CLAUDE.md` layout (`CLAUDE_MD_TARGET="CLAUDE.md"`) is intentional, not sync drift.
 - Missing rules (`no-commit-attribution`, `plan-before-code`).
 - Missing or outdated sync scripts (compare script bodies; flag if the template script has fixes the local one lacks).
 - A role present in one surface but not another (e.g. `architect.md` in claude/ but no `architect.toml` in codex/).
@@ -254,7 +259,8 @@ Then report what changed, what was intentionally left alone, and any findings th
 
 # Hard Rules (both modes)
 
-- Never write outside `agents/`, `.claude/`, `.codex/`, `.opencode/`, `.agents/`, or the project's root `AGENTS.md`/README. Never edit source code.
+- Never write outside `agents/`, `.claude/`, `.codex/`, `.opencode/`, `.github/`, `.agents/`, or the project's root `AGENTS.md`/README. Never edit source code.
+- GitHub agents are verbatim source: `agents/github/agents/*.agent.md` are authored in Copilot format and copied as-is, never derived from the Claude agent. Only skills fan out to `.github/skills/`.
 - **Bootstrap** never overwrites an existing `.claude/agents/` etc. — if found, switch to Reconcile.
 - **Reconcile** never blind-copies templates over customized files. Audit → report → approve → apply. Customizations win over template prose; templates contribute only missing structure and newly-added hard rules, with sign-off.
 - Templates in the agentsync templates directory are read-only at runtime. To evolve them, the user edits there directly.

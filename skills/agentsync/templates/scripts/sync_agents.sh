@@ -19,6 +19,10 @@ if [[ -d "$AGENTS_DIR/opencode" ]]; then
     "$SCRIPT_DIR/sync_opencode.sh"
 fi
 
+if [[ -d "$AGENTS_DIR/github" ]]; then
+    "$SCRIPT_DIR/sync_github.sh"
+fi
+
 if [[ -f "$AGENTS_DIR/AGENTS.md" ]]; then
     cp -f "$AGENTS_DIR/AGENTS.md" "$WORKSPACE_ROOT/AGENTS.md"
     echo "Wrote $WORKSPACE_ROOT/AGENTS.md"

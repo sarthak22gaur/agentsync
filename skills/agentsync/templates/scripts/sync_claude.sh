@@ -5,6 +5,9 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 AGENTS_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 WORKSPACE_ROOT="$(cd "$AGENTS_DIR/.." && pwd)"
 
+[[ -f "$AGENTS_DIR/agentsync.conf" ]] && source "$AGENTS_DIR/agentsync.conf"
+CLAUDE_MD_TARGET="${CLAUDE_MD_TARGET:-.claude/CLAUDE.md}"
+
 SRC="$AGENTS_DIR/claude"
 SKILLS_SRC="$AGENTS_DIR/skills"
 TARGET="$WORKSPACE_ROOT/.claude"
@@ -25,7 +28,9 @@ if [[ -d "$SRC/rules" ]]; then
 fi
 
 if [[ -f "$SRC/CLAUDE.md" ]]; then
-    cp -f "$SRC/CLAUDE.md" "$TARGET/CLAUDE.md"
+    CLAUDE_MD_DEST="$WORKSPACE_ROOT/$CLAUDE_MD_TARGET"
+    mkdir -p "$(dirname "$CLAUDE_MD_DEST")"
+    cp -f "$SRC/CLAUDE.md" "$CLAUDE_MD_DEST"
 fi
 
 if [[ -f "$SRC/settings.json" ]]; then

@@ -5,6 +5,8 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 AGENTS_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 WORKSPACE_ROOT="$(cd "$AGENTS_DIR/.." && pwd)"
 
+source "$SCRIPT_DIR/_lib.sh"
+
 SRC="$AGENTS_DIR/codex"
 SKILLS_SRC="$AGENTS_DIR/skills"
 TARGET="$WORKSPACE_ROOT/.codex"
@@ -34,27 +36,10 @@ fi
 # Strip Claude-only frontmatter keys so Codex can parse them.
 rm -rf "$SHARED_SKILLS_TARGET/"*
 
-normalize_skill() {
-    awk '
-        BEGIN { in_fm = 0; fm_count = 0 }
-        /^---$/ {
-            fm_count++
-            if (fm_count == 1) { in_fm = 1; print; next }
-            if (fm_count == 2) { in_fm = 0; print; next }
-        }
-        in_fm == 1 {
-            if ($0 ~ /^(agent|context|disable-model-invocation|allowed-tools|argument-hint|model|effort|maxTurns|color|permission|permissionMode|tools|disallowedTools|hooks|mode|temperature|steps):/) next
-            print
-            next
-        }
-        { print }
-    '
-}
-
 if [[ -d "$SKILLS_SRC" ]]; then
     for skill_dir in "$SKILLS_SRC"/*; do
         [[ -d "$skill_dir" && -f "$skill_dir/SKILL.md" ]] || continue
-        if grep -Eq '^(agent|context): ' "$skill_dir/SKILL.md"; then
+        if is_delegator_skill "$skill_dir/SKILL.md"; then
             continue
         fi
         name="$(basename "$skill_dir")"
