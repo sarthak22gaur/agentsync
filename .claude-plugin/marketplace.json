@@ -1,0 +1,24 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "agentsync",
+  "description": "Single-plugin marketplace for agentsync — a per-project AI agent system generator and maintainer.",
+  "owner": {
+    "name": "Sarthak Gaur"
+  },
+  "plugins": [
+    {
+      "name": "agentsync",
+      "source": "./",
+      "description": "Scaffold and maintain a per-project AI agent system from one source-of-truth agents/ directory, synced out to Claude Code, Codex, and OpenCode with no per-tool config drift.",
+      "version": "0.1.0",
+      "author": {
+        "name": "Sarthak Gaur"
+      },
+      "homepage": "https://github.com/sarthak22gaur/agentsync",
+      "repository": "https://github.com/sarthak22gaur/agentsync",
+      "license": "MIT",
+      "category": "workflow",
+      "keywords": ["agents", "skills", "claude-code", "codex", "opencode", "scaffold", "source-of-truth"]
+    }
+  ]
+}

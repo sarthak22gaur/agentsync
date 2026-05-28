@@ -1,0 +1,11 @@
+{
+  "name": "agentsync",
+  "description": "Scaffold and maintain a per-project AI agent system from one source-of-truth agents/ directory, synced out to Claude Code, Codex, and OpenCode with no per-tool config drift. Bootstrap mode analyzes the codebase to generate ground-truth; reconcile mode audits an existing setup for gaps, sync drift, and staleness.",
+  "version": "0.1.0",
+  "author": {
+    "name": "Sarthak Gaur"
+  },
+  "homepage": "https://github.com/sarthak22gaur/agentsync",
+  "repository": "https://github.com/sarthak22gaur/agentsync",
+  "license": "MIT"
+}
