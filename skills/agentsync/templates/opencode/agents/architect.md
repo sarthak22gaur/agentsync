@@ -1,5 +1,5 @@
 ---
-description: Principal Architect for {{PROJECT_NAME}}. Produces concise design decisions and plans.
+description: Principal Architect for {{PROJECT_NAME}}. Produces concise design decisions and plans. Use before any non-trivial implementation.
 mode: subagent
 temperature: 0.1
 steps: 40

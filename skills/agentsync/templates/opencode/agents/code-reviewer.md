@@ -1,5 +1,5 @@
 ---
-description: Plan-driven code reviewer for {{PROJECT_NAME}}. Produces findings only.
+description: Plan-driven code reviewer for {{PROJECT_NAME}}. Produces findings only. Use after implementation, before merge.
 mode: subagent
 temperature: 0.1
 steps: 30

@@ -1,5 +1,5 @@
 name = "librarian"
-description = "Knowledge Engineer for {{PROJECT_NAME}}. Keeps agents/ source-of-truth aligned with reality."
+description = "Knowledge Engineer for {{PROJECT_NAME}}. Keeps agents/ source-of-truth aligned with reality. Use when adding or updating agents/skills, or when ground-truth drifts."
 model_reasoning_effort = "medium"
 sandbox_mode = "workspace-write"
 nickname_candidates = ["Librarian", "Curator"]

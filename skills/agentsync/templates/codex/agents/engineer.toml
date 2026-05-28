@@ -1,5 +1,5 @@
 name = "engineer"
-description = "Senior engineer for {{PROJECT_NAME}}. Implements against an approved plan."
+description = "Senior engineer for {{PROJECT_NAME}}. Implements against an approved plan. Use after a plan is approved, to implement it."
 model_reasoning_effort = "medium"
 sandbox_mode = "workspace-write"
 nickname_candidates = ["Builder", "Wrench"]

@@ -1,5 +1,5 @@
 ---
-description: Knowledge Engineer for {{PROJECT_NAME}}. Keeps agents/ source-of-truth aligned with reality.
+description: Knowledge Engineer for {{PROJECT_NAME}}. Keeps agents/ source-of-truth aligned with reality. Use when adding or updating agents/skills, or when ground-truth drifts.
 mode: subagent
 temperature: 0.1
 steps: 30

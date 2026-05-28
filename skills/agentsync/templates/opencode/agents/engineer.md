@@ -1,5 +1,5 @@
 ---
-description: Senior engineer for {{PROJECT_NAME}}. Implements against an approved plan.
+description: Senior engineer for {{PROJECT_NAME}}. Implements against an approved plan. Use after a plan is approved, to implement it.
 mode: subagent
 temperature: 0.1
 steps: 50

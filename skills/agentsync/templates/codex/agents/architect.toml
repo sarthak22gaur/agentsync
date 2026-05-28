@@ -1,5 +1,5 @@
 name = "architect"
-description = "Principal Architect for {{PROJECT_NAME}}. Produces plans and design decisions. Does not implement."
+description = "Principal Architect for {{PROJECT_NAME}}. Produces plans and design decisions. Does not implement. Use before any non-trivial implementation."
 model_reasoning_effort = "high"
 sandbox_mode = "workspace-write"
 nickname_candidates = ["Architect", "Cartographer"]

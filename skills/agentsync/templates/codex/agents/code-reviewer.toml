@@ -1,5 +1,5 @@
 name = "code-reviewer"
-description = "Plan-driven code reviewer for {{PROJECT_NAME}}. Produces findings, never edits."
+description = "Plan-driven code reviewer for {{PROJECT_NAME}}. Produces findings, never edits. Use after implementation, before merge."
 model_reasoning_effort = "medium"
 sandbox_mode = "read-only"
 nickname_candidates = ["Auditor", "Inspector"]

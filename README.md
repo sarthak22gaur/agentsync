@@ -2,7 +2,7 @@
 
 One source-of-truth `agents/` directory → fanned out to every AI coding tool, with no per-tool config drift.
 
-`agentsync` is a Claude Code plugin that **scaffolds and maintains a per-project AI agent system**. You run it inside a project; it generates a single `agents/` source-of-truth directory and sync scripts that fan your agent, skill, and rule definitions out to `.claude/` (Claude Code), `.codex/` (Codex), and `.opencode/` (OpenCode) — plus a shared `.agents/skills/` location. Edit once, sync, and every tool stays in lockstep.
+`agentsync` is a Claude Code plugin that **scaffolds and maintains a per-project AI agent system**. You run it inside a project; it generates a single `agents/` source-of-truth directory and sync scripts that fan your agent, skill, and rule definitions out to `.claude/` (Claude Code), `.codex/` (Codex), and `.opencode/` (OpenCode) — plus a shared `.agents/skills/` location.
 
 ## The problem
 
@@ -139,8 +139,6 @@ agentsync is a different tool for a different job. It is a **project generator a
 In short: wshobson/agents distributes agents; agentsync bootstraps and maintains *your project's* agent system.
 
 ## Roadmap / cross-tool support
-
-Be clear about what's true today versus planned:
 
 - **Today:** agentsync runs as a **Claude Code skill/plugin**. Its *generated output* already targets **Claude Code + Codex + OpenCode** (the templates emit `.claude/`, `.codex/`, `.opencode/`, and a shared `.agents/skills/`). That cross-tool *output* works now.
 - **Planned:** native **Codex** and **OpenCode** entry points for running the scaffolder *itself* (not just consuming its output).
