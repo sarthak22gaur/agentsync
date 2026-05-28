@@ -38,7 +38,8 @@ Ask the user the following. Provide defaults; one question at a time only if any
 | `project_description` | (ask) | One sentence — what the project is |
 | `primary_languages` | inferred from manifest files | List: `python`, `typescript`, `go`, `rust`, `ruby`, `java`, etc. |
 | `base_branch` | `main` | `develop` if a `develop` branch already exists |
-| `client_surfaces` | `claude,codex,opencode` | Comma-separated; user can drop any |
+| `client_surfaces` | `claude,codex,opencode` | Comma-separated; user can drop any. `github` (Copilot) is opt-in — add it explicitly. |
+| `claude_md_target` | `.claude/CLAUDE.md` | Where `CLAUDE.md` is written. Offer root `CLAUDE.md` as an alternative. |
 | `repo_shape` | detected | `single` or `multi` |
 
 Inference rules:
@@ -63,7 +64,9 @@ Copy the agentsync templates directory (see the path noted at the top of this sk
 | `{{LANGUAGES}}` | comma-joined `primary_languages` |
 | `{{REPO_SHAPE}}` | `single` or `multi` |
 
-Drop surface dirs the user opted out of (e.g., if `client_surfaces` excludes `opencode`, delete `agents/opencode/` and its sync script reference).
+Drop surface dirs the user opted out of (e.g., if `client_surfaces` excludes `opencode`, delete `agents/opencode/` and its sync script reference). `github/` is opt-in — keep it only if the user selected `github`, otherwise delete `agents/github/`.
+
+Write `agents/agentsync.conf` from `templates/agentsync.conf` with the chosen `CLAUDE_MD_TARGET` and `OUTPUT_TRACKING` (default `root-docs`). The file is optional; absent means defaults. The sync writes an agentsync-owned block in the workspace `.gitignore` to match `OUTPUT_TRACKING`.
 
 Make sync scripts executable: `chmod +x agents/scripts/*.sh`.
 
@@ -151,6 +154,7 @@ Print:
 - .claude/  (Claude Code)
 - .codex/   (Codex)
 - .opencode/ (OpenCode)
+- .github/  (GitHub Copilot) — if selected
 
 ### Agents (4)
 - architect, code-reviewer, librarian, engineer
@@ -183,7 +187,7 @@ This is an **audit → report → approve → apply** loop, not a re-scaffold. N
 Read what's there:
 - `agents/` tree: which agents, skills, rules, surfaces, scripts exist.
 - `agents/skills/*-ground-truth/SKILL.md`: the current ground-truth.
-- The synced targets: `.claude/`, `.codex/`, `.opencode/`, `.agents/skills/`, root `AGENTS.md`.
+- The synced targets: `.claude/`, `.codex/`, `.opencode/`, `.github/`, `.agents/skills/`, root `AGENTS.md`.
 
 ## R2 — Audit against four gap classes
 
@@ -191,7 +195,9 @@ Compare and collect findings. Do NOT fix yet.
 
 **1. Structural gaps** — diff the live `agents/` tree against the template baseline in the agentsync templates directory:
 - Missing role agents (e.g. template has `engineer`, project lacks it).
-- Missing surfaces (e.g. project has `claude/` + `codex/` but not `opencode/`, and the user wants all three).
+- Missing surfaces (e.g. project has `claude/` + `codex/` but not `opencode/`, and the user wants all three). `github/` is opt-in — only flag it as missing if the user uses Copilot.
+- Read `agents/agentsync.conf` if present: a root-`CLAUDE.md` layout (`CLAUDE_MD_TARGET="CLAUDE.md"`) is intentional, not sync drift. Under `OUTPUT_TRACKING=none`/`root-docs`, a gitignored output dir (`.claude/` etc.) being absent or untracked is expected — never flag it as a missing surface.
+- `.gitignore` agentsync block drifts from `OUTPUT_TRACKING` → propose re-applying the policy (the re-sync fixes it).
 - Missing rules (`no-commit-attribution`, `plan-before-code`).
 - Missing or outdated sync scripts (compare script bodies; flag if the template script has fixes the local one lacks).
 - A role present in one surface but not another (e.g. `architect.md` in claude/ but no `architect.toml` in codex/).
@@ -200,11 +206,15 @@ Compare and collect findings. Do NOT fix yet.
 - Run the sync into a temp dir or `diff` source vs target. If `.claude/agents/foo.md` differs from `agents/claude/agents/foo.md`, someone edited a target directly (anti-pattern) or forgot to sync.
 - Flag direct-target edits explicitly — those edits will be lost on next sync and must be back-ported into `agents/` first.
 
-**3. Stale ground-truth** — re-analyze the codebase (same reads as Mode A Step 3) and diff reality against the existing ground-truth skill:
+**3. Stale generated content** — re-analyze the codebase (same reads as Mode A Step 3) and diff reality against generated content.
+
+*Ground-truth skill:*
 - Documented paths/modules/dirs that no longer exist → stale, propose removal.
 - New top-level dirs, sub-repos, or stack components not documented → gap, propose addition.
 - Stack/version/base-branch changes (manifest diff) → propose update.
 - Entry points cited with `path:line` that have moved → re-anchor.
+
+*`agents/AGENTS.md` and `agents/claude/CLAUDE.md` — derived fields only:* re-derive the generated fields (project description, `Languages:`, base branch, agent roster table) and diff against what each file currently holds. Propose refreshing only the fields that drifted. This is a surgical field refresh — preserve all hand-written prose, never rewrite the file.
 
 **4. Content drift in agents/skills** — the template stubs may have improved since scaffolding:
 - New hard directives or rules added to template agents that the project's customized agents lack. Propose **merging** the new directive in, preserving the user's project-specific role prose.
@@ -222,8 +232,8 @@ Present a single findings table before touching anything:
 ### Sync drift
 - [ ] <target> diverges from <source> — <direct edit? / unsynced?> → <action>
 
-### Stale ground-truth
-- [ ] <claim/path> no longer matches code → <propose edit>
+### Stale generated content
+- [ ] <ground-truth claim, or AGENTS.md/CLAUDE.md derived field> no longer matches code → <propose edit>
 
 ### Content drift (template improvements)
 - [ ] <agent/skill> missing <directive> → <propose merge>
@@ -239,6 +249,7 @@ Ask the user which findings to apply. Default recommendation: apply all structur
 - **Structural gaps**: copy the missing template file into `agents/`, render placeholders. For a new surface, add the whole subtree + its sync script reference.
 - **Sync drift from direct-target edits**: back-port the target's edit into the `agents/` source first, then re-sync (so the edit survives). Confirm with the user which version wins if both diverged.
 - **Stale ground-truth**: edit the ground-truth skill surgically. Same anti-bloat discipline as Mode A — remove dead claims, add only grounded new ones, cap length. Never pad.
+- **Stale AGENTS.md/CLAUDE.md fields**: edit the source (`agents/AGENTS.md`, `agents/claude/CLAUDE.md`) — only the drifted derived fields — then re-sync. Leave hand-written prose untouched.
 - **Content drift**: merge new directives into existing agent files; keep the user's role prose, append/insert the missing rule. Show the diff.
 - **Never** overwrite a customized agent's role description wholesale. When a template stub and a customized file conflict, the customization wins for prose; the template wins only for newly-added hard rules, and only with user sign-off.
 
@@ -254,7 +265,8 @@ Then report what changed, what was intentionally left alone, and any findings th
 
 # Hard Rules (both modes)
 
-- Never write outside `agents/`, `.claude/`, `.codex/`, `.opencode/`, `.agents/`, or the project's root `AGENTS.md`/README. Never edit source code.
+- Never write outside `agents/`, `.claude/`, `.codex/`, `.opencode/`, `.github/`, `.agents/`, the project's root `AGENTS.md`/README, or the agentsync block in the root `.gitignore`. Never edit source code.
+- GitHub agents are verbatim source: `agents/github/agents/*.agent.md` are authored in Copilot format and copied as-is, never derived from the Claude agent. Only skills fan out to `.github/skills/`.
 - **Bootstrap** never overwrites an existing `.claude/agents/` etc. — if found, switch to Reconcile.
 - **Reconcile** never blind-copies templates over customized files. Audit → report → approve → apply. Customizations win over template prose; templates contribute only missing structure and newly-added hard rules, with sign-off.
 - Templates in the agentsync templates directory are read-only at runtime. To evolve them, the user edits there directly.
