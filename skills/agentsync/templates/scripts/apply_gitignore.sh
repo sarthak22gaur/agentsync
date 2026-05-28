@@ -25,6 +25,7 @@ case "$OUTPUT_TRACKING" in
 .codex/
 .opencode/
 .github/agents/
+.github/skills/
 .agents/"
         ;;
     none)

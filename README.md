@@ -153,7 +153,7 @@ OUTPUT_TRACKING="root-docs"
 
 Absent file means the defaults. Set `CLAUDE_MD_TARGET="CLAUDE.md"` to write the system prompt to the repo root instead.
 
-`OUTPUT_TRACKING` decides which generated output git tracks; agentsync keeps a delimited block in your `.gitignore` to match and leaves the rest of the file alone. `all` commits everything (the 0.1.0 behavior); `root-docs` (default) commits the entrypoint docs (`CLAUDE.md`, `AGENTS.md`, `.github/copilot-instructions.md`) and gitignores the bulky regenerable dirs (`.claude/`, `.codex/`, `.opencode/`, `.github/agents/`, `.agents/`); `none` gitignores all generated output so only `agents/` is tracked.
+`OUTPUT_TRACKING` decides which generated output git tracks; agentsync keeps a delimited block in your `.gitignore` to match and leaves the rest of the file alone. `all` commits everything (the 0.1.0 behavior); `root-docs` (default) commits the entrypoint docs (`CLAUDE.md`, `AGENTS.md`, `.github/copilot-instructions.md`) and gitignores the bulky regenerable dirs (`.claude/`, `.codex/`, `.opencode/`, `.github/agents/`, `.github/skills/`, `.agents/`); `none` gitignores all generated output so only `agents/` is tracked.
 
 ## Prior art and how this differs
 
