@@ -1,0 +1,21 @@
+# macOS
+.DS_Store
+
+# Editor / IDE
+.idea/
+.vscode/
+*.swp
+*~
+
+# Logs / temp
+*.log
+tmp/
+.tmp/
+
+# direnv
+.direnv/
+.envrc.local
+
+# Smoke-test / scratch output (never commit generated scaffolds)
+/scratch/
+/tmp-smoke/
