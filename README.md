@@ -38,6 +38,8 @@ bash agents/scripts/sync_agents.sh
 
 The sync scripts use only paths derived from their own location, so the generated `agents/` tree is fully portable — there are no machine-specific paths baked in.
 
+The sync is **merge-safe**: each output dir (`.claude/skills/`, `.agents/skills/`, the agent dirs, …) carries a hidden `.agentsync-manifest` of the entries agentsync owns. Re-syncing prunes only agentsync's own stale entries and leaves anything else — skills or agents another tool or you put there — untouched. agentsync can share a directory with another generator instead of clobbering it.
+
 ## Install
 
 ### As a Claude Code plugin (recommended)

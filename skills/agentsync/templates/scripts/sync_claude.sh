@@ -5,6 +5,8 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 AGENTS_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 WORKSPACE_ROOT="$(cd "$AGENTS_DIR/.." && pwd)"
 
+source "$SCRIPT_DIR/_lib.sh"
+
 [[ -f "$AGENTS_DIR/agentsync.conf" ]] && source "$AGENTS_DIR/agentsync.conf"
 CLAUDE_MD_TARGET="${CLAUDE_MD_TARGET:-.claude/CLAUDE.md}"
 
@@ -14,17 +16,13 @@ TARGET="$WORKSPACE_ROOT/.claude"
 
 mkdir -p "$TARGET/agents" "$TARGET/skills" "$TARGET/rules"
 
-rm -f "$TARGET/agents/"*
-cp -r "$SRC/agents/"* "$TARGET/agents/"
-
-rm -rf "$TARGET/skills/"*
-if [[ -d "$SKILLS_SRC" ]]; then
-    cp -r "$SKILLS_SRC/"* "$TARGET/skills/"
-fi
+# Merge-safe: only prune/replace agentsync's own entries; preserve anything the
+# user or another generator keeps in these shared dirs.
+sync_dir_files "$SRC/agents" "$TARGET/agents"
+sync_skill_dirs_verbatim "$SKILLS_SRC" "$TARGET/skills"
 
 if [[ -d "$SRC/rules" ]]; then
-    rm -f "$TARGET/rules/"*
-    cp -f "$SRC/rules/"* "$TARGET/rules/"
+    sync_dir_files "$SRC/rules" "$TARGET/rules"
 fi
 
 if [[ -f "$SRC/CLAUDE.md" ]]; then

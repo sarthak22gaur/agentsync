@@ -10,7 +10,7 @@
       "name": "agentsync",
       "source": "./",
       "description": "Scaffold and maintain a per-project AI agent system from one source-of-truth agents/ directory, synced out to Claude Code, Codex, and OpenCode with no per-tool config drift.",
-      "version": "0.2.1",
+      "version": "0.2.2",
       "author": {
         "name": "Sarthak Gaur"
       },
