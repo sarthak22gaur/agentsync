@@ -1,7 +1,7 @@
 # Codex configuration for {{PROJECT_NAME}}
 # Fragments under codex/configs/ are concatenated into .codex/config.toml on sync.
 
-# Set your preferred model here. This is a placeholder default — change it to
-# whatever model your Codex setup is configured to use (e.g. a GPT model, or a
-# Claude model if you route Codex through an Anthropic-compatible endpoint).
-model = "REPLACE_ME"
+# Default Codex model — the latest GPT. Applies to every Codex agent (the agent
+# TOMLs set only reasoning effort). Change it if your Codex setup uses a
+# different model, or a Claude model via an Anthropic-compatible endpoint.
+model = "gpt-5.5"

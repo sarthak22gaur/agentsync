@@ -41,6 +41,12 @@ Ask the user the following. Provide defaults; one question at a time only if any
 | `client_surfaces` | `claude,codex,opencode` | Comma-separated; user can drop any. `github` (Copilot) is opt-in — add it explicitly. |
 | `claude_md_target` | `.claude/CLAUDE.md` | Where `CLAUDE.md` is written. Offer root `CLAUDE.md` as an alternative. |
 | `repo_shape` | detected | `single` or `multi` |
+| `opencode_model` | **ask** — blank = inherit OpenCode's default | Only if `opencode` selected. See model defaults below. |
+
+**Model defaults per surface** — set per client; only OpenCode is asked:
+- **Claude** — fixed in the agent templates: `architect` → `opus` (Opus 4.8), `code-reviewer` / `engineer` / `librarian` → `sonnet` (Sonnet 4.6). These aliases track the latest of each tier. Don't ask; leave them unless the user asks to change.
+- **Codex** — `codex/configs/base.toml` ships `model = "gpt-5.5"` (the latest GPT), applied to all Codex agents. Don't ask; only change it if the user names a different Codex model.
+- **OpenCode** — has no default worth assuming (it's multi-provider). **Ask** the user which model OpenCode should use, e.g. `anthropic/claude-sonnet-4-6` or `openai/gpt-5.5`. If they give one, it's written to each OpenCode agent; if they decline, leave OpenCode to its own configured default.
 
 Inference rules:
 - `pyproject.toml` / `requirements.txt` → python
@@ -65,6 +71,11 @@ Copy the agentsync templates directory (see the path noted at the top of this sk
 | `{{REPO_SHAPE}}` | `single` or `multi` |
 
 Drop surface dirs the user opted out of (e.g., if `client_surfaces` excludes `opencode`, delete `agents/opencode/` and its sync script reference). `github/` is opt-in — keep it only if the user selected `github`, otherwise delete `agents/github/`.
+
+**Models** (see Step 1 model defaults):
+- **Claude** — agent templates already pin `model:` (architect `opus`, others `sonnet`). Leave them.
+- **Codex** — `codex/configs/base.toml` already carries `model = "gpt-5.5"`. Only edit that value if the user chose a different Codex model.
+- **OpenCode** — if the user gave an `opencode_model`, add a `model: <opencode_model>` line to each `agents/opencode/agents/*.md` frontmatter (just below `mode:`). If they declined, add nothing — OpenCode falls back to its own default. (Never leave an unsubstituted placeholder; add the real value or no line at all.)
 
 Write `agents/agentsync.conf` from `templates/agentsync.conf` with the chosen `CLAUDE_MD_TARGET` and `OUTPUT_TRACKING` (default `root-docs`). The file is optional; absent means defaults. The sync writes an agentsync-owned block in the workspace `.gitignore` to match `OUTPUT_TRACKING`.
 
@@ -169,6 +180,12 @@ Print:
 ### Rules
 - no-commit-attribution
 - plan-before-code
+
+### Models
+- Claude — architect: opus (Opus 4.8); code-reviewer, engineer, librarian: sonnet (Sonnet 4.6)
+- Codex — gpt-5.5 (all agents, via .codex/config.toml)            # if codex selected
+- OpenCode — <chosen opencode_model, or "OpenCode default (none pinned)">   # if opencode selected
+- GitHub Copilot — model selected in the IDE (none pinned)        # if github selected
 
 ### Next steps
 1. Review agents/claude/agents/*.md and customize role descriptions for {{project_name}}.

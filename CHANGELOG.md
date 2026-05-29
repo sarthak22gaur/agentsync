@@ -2,6 +2,18 @@
 
 Notable changes per release. Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning is [SemVer](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.3] - 2026-05-29
+
+### Fixed
+- Codex `base.toml` no longer ships `model = "REPLACE_ME"`. It carried a non-placeholder literal the driver was expected to hand-edit, which it sometimes skipped — leaving an invalid model in the synced `.codex/config.toml`. It now ships a real default (`gpt-5.5`, the latest GPT) that works untouched.
+
+### Added
+- Per-surface model defaults during bootstrap, surfaced in the final report so the user sees exactly what was set:
+  - **Claude** — `architect` → `opus` (Opus 4.8), the other three → `sonnet` (Sonnet 4.6); aliases that track the latest of each tier (already the template default, now documented).
+  - **Codex** — `gpt-5.5` for all agents.
+  - **OpenCode** — the driver now **asks** which model to use (multi-provider, no safe default). If given, it's written to each OpenCode agent's frontmatter; if declined, OpenCode keeps its own default. Fail-safe: a model line is only added when a real value exists — never an unsubstituted placeholder.
+- Step 5 report gains a **Models** section listing the model set per surface/agent.
+
 ## [0.2.2] - 2026-05-28
 
 ### Changed
