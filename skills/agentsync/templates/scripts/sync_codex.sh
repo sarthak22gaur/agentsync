@@ -23,18 +23,21 @@ if [[ -d "$SRC/configs" ]] && compgen -G "$SRC/configs/*.toml" > /dev/null; then
     done
 fi
 
-# Agent TOMLs
-rm -f "$TARGET/agents/"*.toml 2>/dev/null || true
-if [[ -d "$SRC/agents" ]]; then
-    for toml in "$SRC/agents/"*.toml; do
-        [[ -f "$toml" ]] || continue
-        cp -f "$toml" "$TARGET/agents/"
-    done
-fi
+# Agent TOMLs — merge-safe (preserve foreign .toml files).
+sync_dir_files "$SRC/agents" "$TARGET/agents" '*.toml'
 
 # Skills go to .agents/skills/ (Codex/OpenCode shared location).
-# Strip Claude-only frontmatter keys so Codex can parse them.
-rm -rf "$SHARED_SKILLS_TARGET/"*
+# Strip Claude-only frontmatter keys so Codex can parse them. Merge-safe: only
+# prune/replace agentsync-owned skill dirs; preserve foreign skills.
+owned_skills=()
+if [[ -d "$SKILLS_SRC" ]]; then
+    for skill_dir in "$SKILLS_SRC"/*; do
+        [[ -d "$skill_dir" && -f "$skill_dir/SKILL.md" ]] || continue
+        is_delegator_skill "$skill_dir/SKILL.md" && continue
+        owned_skills+=("$(basename "$skill_dir")")
+    done
+fi
+sync_prune_owned "$SHARED_SKILLS_TARGET" ${owned_skills[@]+"${owned_skills[@]}"}
 
 if [[ -d "$SKILLS_SRC" ]]; then
     for skill_dir in "$SKILLS_SRC"/*; do
@@ -43,6 +46,7 @@ if [[ -d "$SKILLS_SRC" ]]; then
             continue
         fi
         name="$(basename "$skill_dir")"
+        rm -rf "${SHARED_SKILLS_TARGET:?}/$name"
         mkdir -p "$SHARED_SKILLS_TARGET/$name"
         for entry in "$skill_dir"/*; do
             base="$(basename "$entry")"

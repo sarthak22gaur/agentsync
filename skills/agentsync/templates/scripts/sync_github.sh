@@ -15,17 +15,21 @@ SKILLS_TARGET="$TARGET/skills"
 mkdir -p "$TARGET/agents" "$SKILLS_TARGET"
 
 # Copilot agent profiles (.agent.md) are verbatim source — copied, never generated.
-rm -f "$TARGET/agents/"*.agent.md 2>/dev/null || true
-if [[ -d "$SRC/agents" ]]; then
-    for f in "$SRC/agents/"*.agent.md; do
-        [[ -f "$f" ]] || continue
-        cp -f "$f" "$TARGET/agents/"
-    done
-fi
+# Merge-safe: preserve foreign .agent.md profiles.
+sync_dir_files "$SRC/agents" "$TARGET/agents" '*.agent.md'
 
 # Shared skills → .github/skills/, with the same delegator skip and Claude-only-key
-# normalization as Codex.
-rm -rf "$SKILLS_TARGET/"*
+# normalization as Codex. Merge-safe: only prune/replace agentsync-owned skill dirs.
+owned_skills=()
+if [[ -d "$SKILLS_SRC" ]]; then
+    for skill_dir in "$SKILLS_SRC"/*; do
+        [[ -d "$skill_dir" && -f "$skill_dir/SKILL.md" ]] || continue
+        is_delegator_skill "$skill_dir/SKILL.md" && continue
+        owned_skills+=("$(basename "$skill_dir")")
+    done
+fi
+sync_prune_owned "$SKILLS_TARGET" ${owned_skills[@]+"${owned_skills[@]}"}
+
 if [[ -d "$SKILLS_SRC" ]]; then
     for skill_dir in "$SKILLS_SRC"/*; do
         [[ -d "$skill_dir" && -f "$skill_dir/SKILL.md" ]] || continue
@@ -33,6 +37,7 @@ if [[ -d "$SKILLS_SRC" ]]; then
             continue
         fi
         name="$(basename "$skill_dir")"
+        rm -rf "${SKILLS_TARGET:?}/$name"
         mkdir -p "$SKILLS_TARGET/$name"
         for entry in "$skill_dir"/*; do
             base="$(basename "$entry")"
