@@ -2,6 +2,19 @@
 
 Notable changes per release. Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning is [SemVer](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.3] - 2026-05-29
+
+### Fixed
+- Codex `base.toml` no longer hardcodes a model. It first shipped `model = "REPLACE_ME"` (a non-placeholder literal the driver sometimes left dangling); a pinned id is fragile anyway — a model the user's Codex auth/version doesn't expose shows up as "custom" and makes agents that inherit it fail to load. `base.toml` now leaves `model` commented out so Codex uses its own default (the latest available for that auth), with guidance for pinning one deliberately.
+
+### Added
+- Per-surface model defaults during bootstrap, surfaced in the final report (Step 5 **Models** section) so the user sees exactly what was set:
+  - **Claude** — `architect` → `opus` (Opus 4.8), the other three → `sonnet` (Sonnet 4.6); aliases that track the latest of each tier.
+  - **Codex** — Codex's own default model (none pinned).
+  - **OpenCode** — the driver **asks** which model to use (multi-provider, no safe default); fail-safe — a `model:` line is written only when a real value is given, never an unsubstituted placeholder.
+- Code-reviewer agents (all surfaces) gain a **"Reviewing architect plans"** directive — review plans thoroughly, validating every decision against the actual code (cite `path:line`), no rubber-stamping — and **extra-high reasoning effort** (Claude `effort: xhigh`, Codex `model_reasoning_effort = "xhigh"`).
+- **Version-aware upgrades.** Bootstrap stamps `AGENTSYNC_VERSION` into `agents/agentsync.conf`. On reconcile, agentsync compares the stamp to the running version and applies the enhancements of every newer version from a new **Upgrades by version** ledger in the skill — merging into customized files, preserving user prose — then advances the stamp. So running agentsync after upgrading brings an existing project up to date (e.g. picks up the 0.2.3 code-reviewer changes above).
+
 ## [0.2.2] - 2026-05-28
 
 ### Changed
