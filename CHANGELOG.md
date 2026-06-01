@@ -2,6 +2,11 @@
 
 Notable changes per release. Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning is [SemVer](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.4] - 2026-06-01
+
+### Added
+- **orchestrate** skill (`templates/skills/orchestrate/`). A Claude-only delegator that drives an approved plan to clean, verified implementation: the main session reads the plan, then for each phase loops `engineer` (implement) → `code-reviewer` (review the phase diff) → `engineer` (fix blocking findings) until the reviewer returns clean, then runs the plan's stated verification — advancing phase by phase. The orchestrator never edits code itself, caps the per-phase fix loop (default 3 rounds) and escalates to the user instead of looping forever, and stops before committing. Marked Claude-only via `context:` frontmatter, so `is_delegator_skill` keeps it out of the Codex/OpenCode/GitHub fan-out (subagent orchestration is a main-session capability; the `engineer` agent itself can't spawn subagents). Reconcile picks it up for existing projects via a new **Upgrades by version** ledger entry.
+
 ## [0.2.3] - 2026-05-29
 
 ### Fixed
