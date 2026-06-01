@@ -10,6 +10,8 @@ Bootstrap an agent/skill system in any project from a single source-of-truth `ag
 
 The templates this skill copies from live alongside it at `${CLAUDE_PLUGIN_ROOT}/skills/agentsync/templates/` when installed as a plugin, or `~/.claude/skills/agentsync/templates/` when installed standalone. They are the canonical version — edit them there to evolve future scaffolds.
 
+**This skill is agentsync `0.2.3`.** (Release chore: bump this string with every version.) Bootstrap stamps it into `agents/agentsync.conf` as `AGENTSYNC_VERSION`. On reconcile, compare the project's stamped version against this one — if this is newer, apply the intervening versions' enhancements (see [Upgrades by version](#upgrades-by-version)) and re-stamp.
+
 ---
 
 ## Preflight — Choose Mode
@@ -45,7 +47,7 @@ Ask the user the following. Provide defaults; one question at a time only if any
 
 **Model defaults per surface** — set per client; only OpenCode is asked:
 - **Claude** — fixed in the agent templates: `architect` → `opus` (Opus 4.8), `code-reviewer` / `engineer` / `librarian` → `sonnet` (Sonnet 4.6). These aliases track the latest of each tier. Don't ask; leave them unless the user asks to change.
-- **Codex** — `codex/configs/base.toml` ships `model = "gpt-5.5"` (the latest GPT), applied to all Codex agents. Don't ask; only change it if the user names a different Codex model.
+- **Codex** — leave `codex/configs/base.toml` with no active `model` line so Codex uses its own default (the latest model available for the user's auth). **Don't hardcode a model id** — a model the user's auth/version doesn't have shows up as "custom" and makes agents that inherit it fail to load. Pin one only if the user names a model their `codex` lists under `/model` (e.g. `gpt-5.5` for ChatGPT auth, `gpt-5.2-codex` for API-key auth).
 - **OpenCode** — has no default worth assuming (it's multi-provider). **Ask** the user which model OpenCode should use, e.g. `anthropic/claude-sonnet-4-6` or `openai/gpt-5.5`. If they give one, it's written to each OpenCode agent; if they decline, leave OpenCode to its own configured default.
 
 Inference rules:
@@ -69,15 +71,16 @@ Copy the agentsync templates directory (see the path noted at the top of this sk
 | `{{BASE_BRANCH}}` | `base_branch` |
 | `{{LANGUAGES}}` | comma-joined `primary_languages` |
 | `{{REPO_SHAPE}}` | `single` or `multi` |
+| `{{AGENTSYNC_VERSION}}` | this skill's version (see top) |
 
 Drop surface dirs the user opted out of (e.g., if `client_surfaces` excludes `opencode`, delete `agents/opencode/` and its sync script reference). `github/` is opt-in — keep it only if the user selected `github`, otherwise delete `agents/github/`.
 
 **Models** (see Step 1 model defaults):
 - **Claude** — agent templates already pin `model:` (architect `opus`, others `sonnet`). Leave them.
-- **Codex** — `codex/configs/base.toml` already carries `model = "gpt-5.5"`. Only edit that value if the user chose a different Codex model.
+- **Codex** — `codex/configs/base.toml` ships with the `model` line commented out (Codex uses its own default). Only uncomment and set it if the user names a specific Codex model their setup has.
 - **OpenCode** — if the user gave an `opencode_model`, add a `model: <opencode_model>` line to each `agents/opencode/agents/*.md` frontmatter (just below `mode:`). If they declined, add nothing — OpenCode falls back to its own default. (Never leave an unsubstituted placeholder; add the real value or no line at all.)
 
-Write `agents/agentsync.conf` from `templates/agentsync.conf` with the chosen `CLAUDE_MD_TARGET` and `OUTPUT_TRACKING` (default `root-docs`). The file is optional; absent means defaults. The sync writes an agentsync-owned block in the workspace `.gitignore` to match `OUTPUT_TRACKING`.
+Write `agents/agentsync.conf` from `templates/agentsync.conf` with the chosen `CLAUDE_MD_TARGET`, `OUTPUT_TRACKING` (default `root-docs`), and `AGENTSYNC_VERSION` set to this skill's version. The file is optional for the sync scripts (absent means defaults), but always write it at bootstrap so the version stamp exists for future reconciles. The sync writes an agentsync-owned block in the workspace `.gitignore` to match `OUTPUT_TRACKING`.
 
 Make sync scripts executable: `chmod +x agents/scripts/*.sh`.
 
@@ -161,7 +164,7 @@ Print:
 ## Agents bootstrapped for {{project_name}}
 
 ### Source of truth
-- agents/
+- agents/  (agentsync {{AGENTSYNC_VERSION}} — stamped in agents/agentsync.conf)
 
 ### Surfaces synced
 - .claude/  (Claude Code)
@@ -183,7 +186,7 @@ Print:
 
 ### Models
 - Claude — architect: opus (Opus 4.8); code-reviewer, engineer, librarian: sonnet (Sonnet 4.6)
-- Codex — gpt-5.5 (all agents, via .codex/config.toml)            # if codex selected
+- Codex — Codex default model (none pinned; the latest available for your auth)   # if codex selected
 - OpenCode — <chosen opencode_model, or "OpenCode default (none pinned)">   # if opencode selected
 - GitHub Copilot — model selected in the IDE (none pinned)        # if github selected
 
@@ -204,6 +207,7 @@ This is an **audit → report → approve → apply** loop, not a re-scaffold. N
 ## R1 — Inventory the existing setup
 
 Read what's there:
+- `agents/agentsync.conf`: the `AGENTSYNC_VERSION` stamp — the agentsync version that last generated/reconciled this project. Absent (or no conf) → treat as pre-`0.2.3`, the earliest. Compare it to this skill's version (top of file): if this skill is newer, every intervening version's [Upgrades by version](#upgrades-by-version) entry is in scope.
 - `agents/` tree: which agents, skills, rules, surfaces, scripts exist.
 - `agents/skills/*-ground-truth/SKILL.md`: the current ground-truth.
 - The synced targets: `.claude/`, `.codex/`, `.opencode/`, `.github/`, `.agents/skills/`, root `AGENTS.md`.
@@ -235,8 +239,10 @@ Compare and collect findings. Do NOT fix yet.
 
 *`agents/AGENTS.md` and `agents/claude/CLAUDE.md` — derived fields only:* re-derive the generated fields (project description, `Languages:`, base branch, agent roster table) and diff against what each file currently holds. Propose refreshing only the fields that drifted. This is a surgical field refresh — preserve all hand-written prose, never rewrite the file.
 
-**4. Content drift in agents/skills** — the template stubs may have improved since scaffolding:
-- New hard directives or rules added to template agents that the project's customized agents lack. Propose **merging** the new directive in, preserving the user's project-specific role prose.
+**4. Version upgrades & content drift** — the templates improve across versions:
+- **Version-gated:** if the project's `AGENTSYNC_VERSION` (R1) is older than this skill, walk the [Upgrades by version](#upgrades-by-version) ledger and collect every entry newer than the stamp — new directives, effort/model changes, etc. These are concrete, known enhancements to apply.
+- **Ad-hoc drift:** also catch directives present in the current template agents that the project's agents lack but that aren't tied to a version bump.
+- In both cases the action is **merge** the addition in, preserving the user's project-specific role prose — never wholesale overwrite.
 
 **5. Foreign artifacts** — things that look agentsync-installed but are not in the template set:
 - Git hooks, scripts, or config stamped with "agentsync" attribution that no agentsync version ships (e.g. a `.git/hooks/pre-commit` calling a nonexistent `check_sync.sh`). Check untracked locations like `.git/hooks/` — they survive `git restore` and outlive prior runs.
@@ -262,6 +268,9 @@ Present a single findings table before touching anything:
 ### Stale generated content
 - [ ] <ground-truth claim, or AGENTS.md/CLAUDE.md derived field> no longer matches code → <propose edit>
 
+### Version upgrades (AGENTSYNC_VERSION <stamp> → <this version>)
+- [ ] <version>: <enhancement from the ledger> → <propose merge>
+
 ### Content drift (template improvements)
 - [ ] <agent/skill> missing <directive> → <propose merge>
 
@@ -283,7 +292,8 @@ Ask the user which findings to apply. Default recommendation: apply all structur
 - **Sync drift from direct-target edits**: back-port the target's edit into the `agents/` source first, then re-sync (so the edit survives). Confirm with the user which version wins if both diverged.
 - **Stale ground-truth**: edit the ground-truth skill surgically. Same anti-bloat discipline as Mode A — remove dead claims, add only grounded new ones, cap length. Never pad.
 - **Stale AGENTS.md/CLAUDE.md fields**: edit the source (`agents/AGENTS.md`, `agents/claude/CLAUDE.md`) — only the drifted derived fields — then re-sync. Leave hand-written prose untouched.
-- **Content drift**: merge new directives into existing agent files; keep the user's role prose, append/insert the missing rule. Show the diff.
+- **Version upgrades & content drift**: merge each approved enhancement into the existing agent file; keep the user's role prose, append/insert the missing directive and apply the effort/model change. Show the diff.
+- **Re-stamp**: once the approved version upgrades are applied, set `AGENTSYNC_VERSION` in `agents/agentsync.conf` to this skill's version (create the conf if the project lacked one). If the user declined some upgrades, do **not** advance the stamp past them — leave it at the newest version whose upgrades are fully applied, so the rest resurface next run.
 - **Never** overwrite a customized agent's role description wholesale. When a template stub and a customized file conflict, the customization wins for prose; the template wins only for newly-added hard rules, and only with user sign-off.
 
 ## R5 — Re-sync and report
@@ -292,7 +302,17 @@ Ask the user which findings to apply. Default recommendation: apply all structur
 bash agents/scripts/sync_agents.sh
 ```
 
-Then report what changed, what was intentionally left alone, and any findings the user declined.
+Then report what changed (including the `AGENTSYNC_VERSION` stamp before → after), what was intentionally left alone, and any findings the user declined.
+
+---
+
+# Upgrades by version
+
+Reconcile uses this ledger to bring a project generated by an older agentsync up to the running version. For each version newer than the project's `AGENTSYNC_VERSION` stamp, apply its entry below — **merging** into customized files, preserving the user's prose — then advance the stamp (R4). A missing stamp means the project predates this mechanism: treat it as pre-`0.2.3` and apply everything.
+
+**Every release adds an entry here** describing what an existing project should pick up. Keep entries concrete and action-oriented — reconcile follows them literally.
+
+- **0.2.3** — Code-reviewer agents gain a **"Reviewing architect plans"** directive (review plans thoroughly; validate and scrutinize every decision against the actual code, cite `path:line`, no rubber-stamping) and **extra-high reasoning effort**: Claude `effort: xhigh`, Codex `model_reasoning_effort = "xhigh"`. Merge the directive into each surface's code-reviewer (claude / codex / opencode / github), preserving any customized review prose. Codex `base.toml` no longer pins a model — if the project hardcodes a Codex `model` the user didn't deliberately choose, comment it out so Codex uses its own default.
 
 ---
 

@@ -1,7 +1,9 @@
 # Codex configuration for {{PROJECT_NAME}}
 # Fragments under codex/configs/ are concatenated into .codex/config.toml on sync.
 
-# Default Codex model — the latest GPT. Applies to every Codex agent (the agent
-# TOMLs set only reasoning effort). Change it if your Codex setup uses a
-# different model, or a Claude model via an Anthropic-compatible endpoint.
-model = "gpt-5.5"
+# Model: left unset so Codex uses its own default — the latest model available
+# for your auth. Do NOT hardcode a model id your Codex doesn't have: it shows up
+# as "custom" and agents that inherit it fail to load. To pin one, uncomment and
+# set it to a model your `codex` lists under `/model` (e.g. "gpt-5.5" for ChatGPT
+# auth, "gpt-5.2-codex" for API-key auth).
+# model = "gpt-5.5"
