@@ -2,7 +2,6 @@
 name: orchestrate
 description: Drive an approved plan to clean, verified implementation by looping engineer → code-reviewer → engineer, phase by phase, until each phase passes review and verification. Use when you have an approved plan file and want the main session to delegate implementation and review end-to-end without writing code itself.
 argument-hint: "[path to the approved plan file]"
-context: main-session
 ---
 
 # Orchestrate

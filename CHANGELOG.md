@@ -2,6 +2,11 @@
 
 Notable changes per release. Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning is [SemVer](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.5] - 2026-06-01
+
+### Changed
+- **orchestrate is now multi-surface.** It shipped in 0.2.4 marked Claude-only via a `context:` frontmatter line (which trips `is_delegator_skill` and excludes a skill from the Codex/OpenCode/GitHub fan-out), on the mistaken assumption that only Claude Code spawns subagents. Codex and OpenCode both have a subagent/delegation model (Codex surfaces the role agents as named subagents — e.g. the `engineer`/`code-reviewer` as Wrench/Auditor — via the `nickname_candidates` in their TOMLs). The skill's body was already surface-agnostic ("delegate to the `engineer` / `code-reviewer`," never a Claude-specific tool call), so removing the marker is the whole change: orchestrate now fans out to `.agents/skills/` and `.github/skills/` alongside `.claude/`. On GitHub Copilot the loop is guidance rather than an auto-driven cycle (Copilot models it as declarative handoffs), but the skill is valid there. Reconcile strips the stray `context:` line from projects that installed the 0.2.4 form (new Upgrades-by-version entry).
+
 ## [0.2.4] - 2026-06-01
 
 ### Added
