@@ -1,5 +1,15 @@
 # Codex configuration for {{PROJECT_NAME}}
-# Fragments under codex/configs/ are concatenated into .codex/config.toml on sync.
+# Fragments under codex/configs/ are concatenated into .codex/config.toml on
+# sync; sync_codex.sh then appends an [agents.<name>] registration for each
+# agent under codex/agents/. Do not edit .codex/config.toml directly — it is
+# regenerated on every sync.
+#
+# Using the agents: Codex has no agent picker or list. You invoke a role by
+# asking Codex to delegate, e.g. "use the architect sub-agent to plan X" or
+# "have the code-reviewer review this diff". The roles only load when the
+# project is TRUSTED — accept the trust prompt the first time you run `codex`
+# in this repo. Untrusted projects skip the .codex/ config layer entirely, so
+# no custom role is available.
 
 # Model: left unset so Codex uses its own default — the latest model available
 # for your auth. Do NOT hardcode a model id your Codex doesn't have: it shows up
@@ -7,3 +17,16 @@
 # set it to a model your `codex` lists under `/model` (e.g. "gpt-5.5" for ChatGPT
 # auth, "gpt-5.2-codex" for API-key auth).
 # model = "gpt-5.5"
+
+# Multi-agent delegation (the spawn_agent tool). Stable and on by default in
+# current Codex; set explicitly so role delegation keeps working if the default
+# ever changes.
+[features]
+multi_agent = true
+
+# Limits for spawned agent threads. Defaults are max_threads = 6, max_depth = 1;
+# max_depth = 2 leaves headroom for a delegated role to spawn one more level
+# (e.g. the orchestrate loop).
+[agents]
+max_threads = 6
+max_depth = 2

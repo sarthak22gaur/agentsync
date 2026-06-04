@@ -2,6 +2,16 @@
 
 Notable changes per release. Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning is [SemVer](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.6] - 2026-06-04
+
+### Fixed
+- **Codex custom agents now actually load.** Through 0.2.5, the Codex sync wrote standalone `codex/agents/*.toml` definitions and a comment-only `base.toml`, on the assumption that Codex auto-discovers `.codex/agents/`. It does not. Verified against `codex-cli` 0.137.0: a role is spawnable **only** when declared in `.codex/config.toml` under `[agents.<name>]` with a `config_file` pointing at its definition, **and** only when the project is trusted — otherwise `spawn_agent` returns `unknown agent_type` and the agents are invisible/unusable. (Standalone-file auto-discovery, project-local config in an untrusted project, and registration-via-absolute-path in an untrusted project all fail; registration in a trusted project succeeds — confirmed end-to-end for all four roles, including the hyphenated `code-reviewer`.) `sync_codex.sh` now rebuilds `.codex/config.toml` from the `codex/configs/` fragments and **appends an `[agents.<name>]` registration for each agent** under `codex/agents/` (reusing the agent's own `name`/`description`, with `config_file = "agents/<name>.toml"` resolved relative to `.codex/`). Reconcile picks this up for existing projects via a new **Upgrades by version** entry.
+- `sync_codex.sh` no longer depends on the `compgen` bash builtin (absent from some minimal/Nix bash builds, where the old `compgen -G` guard silently produced an empty `config.toml`). It uses the same `-f`-guarded glob idiom as `_lib.sh`.
+
+### Added
+- Codex `base.toml` now ships a global `[agents]` block (`max_threads = 6`, `max_depth = 2`) and `[features] multi_agent = true` (the delegation feature; stable and on by default, set explicitly so it survives a default change), plus header comments documenting the two things that trip people up: **the project must be trusted** for the `.codex/` layer to load, and **Codex has no agent picker** — you invoke a role by asking Codex to delegate ("use the architect sub-agent…"). The same guidance is surfaced in the rendered `AGENTS.md`, `agents/README.md`, and the bootstrap report's Next steps.
+- Rendered `AGENTS.md` now explains how **skills** surface in Codex. Skills needed no structural change — they are auto-discovered under `.agents/skills/` (verified against 0.137.0: a skill dir there is loaded and listed; `./skills/` is not), and `normalize_skill` already strips the frontmatter keys Codex rejects (e.g. `argument-hint`). The confusion was the same as for agents: Codex has **no per-skill `/` entry** like Claude Code — skills are listed under `/skills` and invoked by name (or pulled in by the model when the task matches), and load only in a trusted project. `orchestrate` is now also listed in the AGENTS.md skills table.
+
 ## [0.2.5] - 2026-06-01
 
 ### Changed

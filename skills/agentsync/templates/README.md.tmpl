@@ -18,8 +18,11 @@ agents/
     agents/          # Claude agent definitions (markdown)
     rules/           # Hard rules surfaced to Claude
   codex/
-    agents/          # Codex agent TOMLs
-    configs/         # Codex config fragments
+    agents/          # Codex agent TOMLs (definitions)
+    configs/         # Codex config fragments (base.toml + global [agents]/[features])
+                     # sync appends an [agents.<name>] registration per agent to
+                     # .codex/config.toml — Codex won't spawn a role that isn't
+                     # registered there, and only in a trusted project.
   opencode/
     agents/          # OpenCode agent markdown
   skills/            # Universal skills (consumed by all surfaces)
