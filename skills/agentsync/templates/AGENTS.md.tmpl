@@ -17,10 +17,15 @@
 | librarian | Keeps `agents/` source-of-truth in sync with reality |
 | engineer | Implements features and fixes |
 
+> **Codex has no agent picker.** Invoke a role by asking Codex to delegate — e.g. *"use the architect sub-agent to plan X"* or *"have the code-reviewer review this diff"*. Roles load only when the project is **trusted** (accept Codex's trust prompt the first time you run `codex` here); untrusted projects skip the `.codex/` config layer and no custom role is available.
+
 ## Skills
 
 - `grill-plan` — stress-test plans before execution
+- `orchestrate` — drive an approved plan: loop engineer → code-reviewer per phase
 - `{{PROJECT_NAME}}-ground-truth` — single source of truth for the project
+
+> **Codex has no per-skill `/` entry.** Skills aren't individual slash commands the way they are in Claude Code. Run `/skills` to list what's available, or just invoke one by name ("use the grill-plan skill on …") — Codex also pulls a skill in on its own when the task matches its description. Like agent roles, skills load only when the project is **trusted**.
 
 ## Conventions
 
