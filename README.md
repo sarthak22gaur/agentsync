@@ -6,35 +6,38 @@ One source-of-truth `agents/` directory → fanned out to every AI coding tool, 
 
 ## The problem
 
-If you use more than one AI coding tool, you end up maintaining the same agent/skill/rule definitions three times, in three formats, and they drift. agentsync makes one directory the source of truth and treats `.claude/`, `.codex/`, and `.opencode/` as **generated artifacts** — you never hand-edit them.
+If you use more than one AI coding tool, you end up maintaining the same agent, skill, and rule definitions several times, in several formats, and they drift. agentsync makes one directory the source of truth and treats `.claude/`, `.codex/`, `.opencode/`, and `.github/agents/` as **generated artifacts** that you never hand-edit. Each agent is written **once**, in `agents/roles/<name>.md`, and generated into every tool's native format.
 
 ## Two modes
 
-**Bootstrap** (fresh project) — scaffolds the `agents/` source-of-truth tree, the sync scripts, four role agents (architect, code-reviewer, librarian, engineer) in each tool's native format, two opinionated rules (no-commit-attribution, plan-before-code), the `grill-plan` and `orchestrate` skills, then **analyzes your codebase** to generate a project-specific `<project>-ground-truth` skill so agents start with real orientation.
+**Bootstrap** (fresh project) scaffolds the `agents/` source-of-truth tree: four single-source role agents (architect, code-reviewer, engineer, librarian), four shared hard rules (no AI attribution, plan before code, scope discipline and a defect bar for reviews, verify with the CLI rather than the editor), the `grill-plan`, `grill-converge`, and `orchestrate` skills, and the sync scripts. It then **analyzes your codebase** to generate a project-specific `<project>-ground-truth` skill, so agents start with real orientation.
 
-**Reconcile** (existing setup) — audits an existing `agents/` setup for: structural gaps (missing agents/surfaces/rules), sync drift (a tool's generated files were hand-edited or never re-synced), stale ground-truth (documented paths/stack that no longer match the code), and template improvements you haven't picked up. It reports findings first, then applies only what you approve — it never clobbers your customizations.
+**Reconcile** (existing setup) — audits an existing `agents/` setup for: structural gaps (missing agents, surfaces, or rules), sync drift (a tool's generated files were hand-edited or never re-synced), stale ground-truth (documented paths or stack that no longer match the code), and version upgrades or template improvements you haven't picked up, including migrating a pre-0.3.0 per-surface layout to single-source roles. It reports findings first, then applies only what you approve — it never clobbers your customizations.
 
 ## How it works
 
 ```
 agents/                      # ← you edit here (source of truth)
-  AGENTS.md                  # workspace overview (also rendered to repo root)
-  agentsync.conf             # optional: where CLAUDE.md is written
-  claude/  { CLAUDE.md, agents/, rules/ }
-  codex/   { agents/*.toml, configs/ }
-  opencode/{ agents/*.md }
-  github/  { agents/*.agent.md }   # opt-in (GitHub Copilot)
-  skills/  { grill-plan/, orchestrate/, <project>-ground-truth/ }
-  scripts/ { sync_*.sh }
+  AGENTS.md                  # workspace guide → root AGENTS.md (roles table + rules injected)
+  agentsync.conf             # surfaces, CLAUDE.md location, tracking policy, Codex options
+  roles/    { architect.md, code-reviewer.md, engineer.md, librarian.md }   # one file per agent
+  rules/    { *.md }         # shared hard rules
+  skills/   { grill-plan/, grill-converge/, orchestrate/, <project>-ground-truth/ }
+  claude/   { CLAUDE.md, settings.json }
+  codex/    { configs/ }
+  scripts/  { gen_agents.sh, sync_*.sh }
 
 bash agents/scripts/sync_agents.sh
         │
-        ├── .claude/      (Claude Code: agents, skills, rules, CLAUDE.md)
-        ├── .codex/       (Codex: agent TOMLs, config.toml)
-        ├── .opencode/    (OpenCode: agent markdown)
+        ├── .claude/      (Claude Code: agents, skills, rules, CLAUDE.md, settings.json)
+        ├── .codex/       (Codex: agents/*.toml, config.toml)
+        ├── .opencode/    (OpenCode: agents)
         ├── .github/      (GitHub Copilot: agents, skills) — if enabled
-        └── .agents/skills/  (shared skills for Codex/OpenCode)
+        ├── .agents/skills/  (shared skills: Codex, OpenCode, Copilot)
+        └── AGENTS.md     (read by Codex, OpenCode, Copilot)
 ```
+
+A role file has canonical frontmatter (`name`, `description`, `tier` for reasoning effort, `access` for read-only vs write, `surfaces`, `skills`) plus optional per-surface blocks for keys only one tool understands, such as Claude hooks, Codex nicknames, or Copilot handoffs. **No model is pinned anywhere**: every tool's subagents inherit the session model by default, and a pinned name goes stale the next time models are renamed or retired.
 
 The sync scripts use only paths derived from their own location, so the generated `agents/` tree is fully portable — there are no machine-specific paths baked in.
 
@@ -73,7 +76,7 @@ Then invoke it with `/agentsync` inside a project.
 4. agentsync scaffolds `agents/`, generates a `<project>-ground-truth` skill from your codebase, and runs the first sync.
 5. Review `agents/claude/agents/*.md` and the generated ground-truth skill, tweak anything, and re-run `bash agents/scripts/sync_agents.sh`.
 
-From then on: **edit `agents/`, run the sync, commit both** the `agents/` source and the generated `.claude/` etc.
+From then on: **edit `agents/`, run the sync, and commit** `agents/` plus whatever generated output `OUTPUT_TRACKING` tells git to track.
 
 ## Example: a generated `agents/` tree
 
@@ -83,46 +86,32 @@ Bootstrapping a project named `acme-api` produces:
 agents/
 ├── AGENTS.md
 ├── README.md
-├── claude/
-│   ├── CLAUDE.md
-│   ├── agents/
-│   │   ├── architect.md
-│   │   ├── code-reviewer.md
-│   │   ├── engineer.md
-│   │   └── librarian.md
-│   └── rules/
-│       ├── no-commit-attribution.md
-│       └── plan-before-code.md
-├── codex/
-│   ├── agents/
-│   │   ├── architect.toml
-│   │   ├── code-reviewer.toml
-│   │   ├── engineer.toml
-│   │   └── librarian.toml
-│   └── configs/
-│       └── base.toml
-├── opencode/
-│   └── agents/
-│       ├── architect.md
-│       ├── code-reviewer.md
-│       ├── engineer.md
-│       └── librarian.md
-├── github/                          # ← opt-in (GitHub Copilot)
-│   └── agents/
-│       ├── architect.agent.md
-│       ├── code-reviewer.agent.md
-│       ├── engineer.agent.md
-│       └── librarian.agent.md
+├── agentsync.conf
+├── roles/
+│   ├── architect.md
+│   ├── code-reviewer.md
+│   ├── engineer.md
+│   └── librarian.md
+├── rules/
+│   ├── no-commit-attribution.md
+│   ├── plan-before-code.md
+│   ├── scope-discipline.md
+│   └── verify-with-cli.md
 ├── skills/
-│   ├── grill-plan/
-│   │   └── SKILL.md
-│   ├── orchestrate/                # ← drives the engineer/reviewer loop (all surfaces)
-│   │   └── SKILL.md
+│   ├── grill-plan/SKILL.md
+│   ├── grill-converge/SKILL.md     # ← harden a plan: grill rounds + one peer-CLI gate
+│   ├── orchestrate/SKILL.md        # ← drive a plan: engineer → reviewer per phase
 │   └── acme-api-ground-truth/      # ← generated by analyzing the codebase
 │       └── SKILL.md
+├── claude/
+│   ├── CLAUDE.md
+│   └── settings.json               # ← turns off Claude Code's commit/PR attribution
+├── codex/
+│   └── configs/base.toml
 └── scripts/
     ├── _lib.sh
     ├── apply_gitignore.sh
+    ├── gen_agents.sh
     ├── sync_agents.sh
     ├── sync_claude.sh
     ├── sync_codex.sh
@@ -136,28 +125,30 @@ Running `sync_agents.sh` then produces `.claude/`, `.codex/`, `.opencode/`, `.ag
 
 agentsync ships opinions, but they're all overridable:
 
-- **Four role agents** (architect / code-reviewer / librarian / engineer) are a starting taxonomy. Add, remove, or rename them — they're just files under `agents/`.
-- **Base branch** defaults to `main` (`develop` if a `develop` branch already exists). Change it during setup.
-- **Two rules** (no AI attribution in commits; plan before non-trivial code) are opinionated and meant to be edited or dropped if they don't fit your workflow.
-- **Codex model** in `agents/codex/configs/base.toml` is a `REPLACE_ME` placeholder — set it to whatever model your Codex setup uses.
-- **Surfaces** — Claude/Codex/OpenCode are on by default; drop any you don't use, or add GitHub Copilot (opt-in).
+- **Four role agents** (architect / code-reviewer / engineer / librarian) are a starting taxonomy. Add, remove, rename, or split them (e.g. backend/frontend engineers). Each is one file under `agents/roles/`.
+- **Models are inherited, not pinned.** To pin one deliberately, add `model:` to that role's surface block.
+- **Reasoning effort** is set per role (`tier`): `high` for architect, reviewer, and engineer, and `medium` for the librarian.
+- **Base branch** defaults to `main` (`develop` if a `develop` branch already exists).
+- **Rules** are opinionated and meant to be edited or dropped if they don't fit your workflow.
+- **Surfaces**: Claude, Codex, and OpenCode are on by default. Drop any you don't use, or add GitHub Copilot (opt-in).
+- **Hand-written agents for one tool** can sit in `agents/<surface>/agents/`. They're copied verbatim.
 
 ## Configuration
 
-One optional file, `agents/agentsync.conf` (sourced by the sync scripts):
+`agents/agentsync.conf` (sourced by the sync scripts; bootstrap writes it):
 
 ```sh
-# Where the Claude system prompt is written, relative to workspace root.
-# Default: .claude/CLAUDE.md   |   Common alternative: CLAUDE.md (repo root)
-CLAUDE_MD_TARGET=".claude/CLAUDE.md"
-
-# Which generated output git tracks.
-OUTPUT_TRACKING="root-docs"
+AGENTSYNC_VERSION="0.3.0"          # stamped by agentsync; drives version-aware reconcile
+SURFACES="claude codex opencode"   # any of: claude codex opencode github
+CLAUDE_MD_TARGET=".claude/CLAUDE.md"   # or "CLAUDE.md" for the repo root
+OUTPUT_TRACKING="root-docs"        # all | root-docs | none
+CODEX_EXEC_PREFIX=""               # e.g. "direnv exec ." — set at bootstrap when an .envrc exists
+CODEX_REGISTER_ROLES="no"          # "yes" only for older Codex that doesn't auto-discover .codex/agents/
 ```
 
-Absent file means the defaults. Set `CLAUDE_MD_TARGET="CLAUDE.md"` to write the system prompt to the repo root instead.
+`OUTPUT_TRACKING` decides which generated output git tracks. agentsync keeps a delimited block in your `.gitignore` to match and leaves the rest of the file alone. `all` commits everything. `root-docs` (the default) commits the entrypoint docs (`CLAUDE.md`, `AGENTS.md`, `.github/copilot-instructions.md`) and gitignores the bulky regenerable dirs (`.claude/`, `.codex/`, `.opencode/`, `.github/agents/`, `.github/skills/`, `.agents/`). `none` gitignores all generated output, so only `agents/` is tracked.
 
-`OUTPUT_TRACKING` decides which generated output git tracks; agentsync keeps a delimited block in your `.gitignore` to match and leaves the rest of the file alone. `all` commits everything (the 0.1.0 behavior); `root-docs` (default) commits the entrypoint docs (`CLAUDE.md`, `AGENTS.md`, `.github/copilot-instructions.md`) and gitignores the bulky regenerable dirs (`.claude/`, `.codex/`, `.opencode/`, `.github/agents/`, `.github/skills/`, `.agents/`); `none` gitignores all generated output so only `agents/` is tracked.
+`CODEX_EXEC_PREFIX` exists because Codex's shells don't load a project's direnv/Nix environment, so tools look missing. When it's set, generated Codex agents route commands through the prefix.
 
 ## Prior art and how this differs
 
@@ -175,12 +166,13 @@ In short: wshobson/agents distributes agents; agentsync bootstraps and maintains
 
 - **Today:** agentsync runs as a **Claude Code skill/plugin**. Its *generated output* already targets **Claude Code + Codex + OpenCode + GitHub Copilot** (the templates emit `.claude/`, `.codex/`, `.opencode/`, `.github/`, and a shared `.agents/skills/`). That cross-tool *output* works now.
 - **Planned:** native **Codex** and **OpenCode** entry points for running the scaffolder *itself* (not just consuming its output).
-- **Known constraint:** Codex enforces an ~8 KB per-skill cap. The agentsync driver logic is well over that, so a Codex port will require splitting this skill into a thin entry point plus a subagent that carries the long bootstrap/reconcile logic. That work isn't done yet.
+- **Known constraint:** Codex budgets its skill listing (about 2% of the context window) and truncates project docs past `project_doc_max_bytes` (32 KiB by default). The sync warns when the rendered `AGENTS.md` crosses 32 KiB. The agentsync driver itself is long, so a Codex port would split it into a thin entry point plus a subagent.
 
 ## Tested against
 
-- **Claude Code** `v2.1.154` — the scaffolder and plugin manifests were built and smoke-tested here. `claude plugin validate .` passes, and a full bootstrap → sync into a throwaway project populates `.claude/`, `.codex/`, `.opencode/`, and `.agents/skills/` correctly.
-- The **Codex**, **OpenCode**, and **GitHub Copilot** emitters target those tools' config formats as of early 2026. The GitHub agent frontmatter follows the Copilot custom-agent spec (`tools`/`target`/`handoffs`). The generated output was structurally verified, but has not been runtime-tested inside those tools in this build. Treat those surfaces as best-effort.
+- **Claude Code**: the plugin manifests validate with `claude plugin validate .`, and a bootstrap → sync into a throwaway project populates every surface.
+- **Sync scripts**: exercised with macOS's stock `/bin/bash` 3.2 and BSD `awk`/`sed`: fresh bootstrap, re-sync idempotency, pruning a removed role, preserving foreign skills, agents, and settings, and a pre-0.3.0 per-surface layout synced unchanged.
+- **Output formats** were checked against each tool's official docs as of 2026-09: Claude Code subagent/skill/rules/settings frontmatter, Codex custom agents (`.codex/agents/*.toml`, auto-discovered) and config keys, OpenCode agent `permission` / `color` / `steps`, and Copilot `.agent.md` fields and tool aliases (`read`, `search`, `edit`, `execute`). The Codex, OpenCode, and Copilot output was verified against those formats but not runtime-tested inside each tool in this release. Treat those surfaces as best-effort.
 
 ## Warnings and disclaimers
 

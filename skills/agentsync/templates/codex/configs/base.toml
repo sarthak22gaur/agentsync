@@ -1,32 +1,21 @@
-# Codex configuration for {{PROJECT_NAME}}
-# Fragments under codex/configs/ are concatenated into .codex/config.toml on
-# sync; sync_codex.sh then appends an [agents.<name>] registration for each
-# agent under codex/agents/. Do not edit .codex/config.toml directly — it is
-# regenerated on every sync.
+# Codex configuration for {{PROJECT_NAME}}.
+# Fragments under codex/configs/ are concatenated (in name order) into
+# .codex/config.toml on every sync — edit them here, never the generated file.
 #
-# Using the agents: Codex has no agent picker or list. You invoke a role by
-# asking Codex to delegate, e.g. "use the architect sub-agent to plan X" or
-# "have the code-reviewer review this diff". The roles only load when the
-# project is TRUSTED — accept the trust prompt the first time you run `codex`
-# in this repo. Untrusted projects skip the .codex/ config layer entirely, so
-# no custom role is available.
+# The project must be TRUSTED: Codex ignores a project's .codex/ layer
+# (config, agents) until you accept the trust prompt on first `codex` run.
+#
+# Agents: sync writes one .codex/agents/<name>.toml per role, which Codex
+# auto-discovers. There's no agent picker — ask Codex to delegate ("spawn the
+# architect agent to plan X"). Codex doesn't self-delegate, so be explicit.
+#
+# Model: deliberately unset. Codex uses its default for your sign-in, and each
+# agent inherits the parent session's model; the role files pin only reasoning
+# effort. Pinning a slug here or in an agent goes stale when models are renamed
+# or retired, and an unknown slug stops agents from starting. To pin anyway, use
+# an exact slug your `codex` lists under /model.
+# model = "<exact slug from /model>"
 
-# Model: left unset so Codex uses its own default — the latest model available
-# for your auth. Do NOT hardcode a model id your Codex doesn't have: it shows up
-# as "custom" and agents that inherit it fail to load. To pin one, uncomment and
-# set it to a model your `codex` lists under `/model` (e.g. "gpt-5.5" for ChatGPT
-# auth, "gpt-5.2-codex" for API-key auth).
-# model = "gpt-5.5"
-
-# Multi-agent delegation (the spawn_agent tool). Stable and on by default in
-# current Codex; set explicitly so role delegation keeps working if the default
-# ever changes.
-[features]
-multi_agent = true
-
-# Limits for spawned agent threads. Defaults are max_threads = 6, max_depth = 1;
-# max_depth = 2 leaves headroom for a delegated role to spawn one more level
-# (e.g. the orchestrate loop).
-[agents]
-max_threads = 6
-max_depth = 2
+# Multi-repo workspace (the root isn't a git repo): Codex treats the nearest
+# `.git` as the project root, so launching inside a sub-repo skips this
+# workspace-level config and AGENTS.md. Run `codex` from the workspace root.

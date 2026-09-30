@@ -1,33 +1,15 @@
-# {{PROJECT_NAME}} — Claude Rules
+# {{PROJECT_NAME}}
 
 {{PROJECT_DESCRIPTION}}
 
 Languages: {{LANGUAGES}}. Default base branch: `{{BASE_BRANCH}}`.
 
----
+**No AI attribution** in commits or PRs. **Plan before non-trivial code.** **Smallest sufficient change**: unrequested scope goes to the user, never silently into the diff. Detail for each lives in `.claude/rules/`. Those rules load every session at this file's priority, so keep this file and them short.
 
-## Skill Discipline
+## Orientation
 
-Consult `.claude/skills/{{PROJECT_NAME}}-ground-truth/` first for project orientation. Do not invent project rules; if a skill covers the topic, follow it.
+Load the `{{PROJECT_NAME}}-ground-truth` skill before non-trivial work. If a skill covers the topic, follow it instead of inventing project rules. When a skill says MUST, treat it as a hard constraint, and apply a rule to every file you touch, not just the first.
 
-When loading skills, follow rules literally. "MUST" is a hard constraint. Apply rules to every file you touch, not just the first.
+## Source of truth
 
----
-
-## Available Agents
-
-- `/architect` — design authority, produces plans
-- `/code-reviewer` — plan-driven code review
-- `/librarian` — keeps `agents/` in sync with reality
-- `/engineer` — feature and bug implementation
-
-## Available Skills
-
-- `/grill-plan` — stress-test a plan before delegating work
-- `/{{PROJECT_NAME}}-ground-truth` — project source of truth (read this first)
-
-## Hard Rules
-
-See `.claude/rules/` for binding constraints. The non-negotiable ones:
-- `no-commit-attribution.md` — no AI attribution in commits or PRs
-- `plan-before-code.md` — plan + approval before non-trivial implementation
+`.claude/`, `.codex/`, `.opencode/`, `.agents/`, and the root `AGENTS.md` are generated from `agents/`. Edit there, then run `bash agents/scripts/sync_agents.sh`. Available agents and skills are surfaced by the runtime, so they aren't listed here.

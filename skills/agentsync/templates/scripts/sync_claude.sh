@@ -16,14 +16,23 @@ TARGET="$WORKSPACE_ROOT/.claude"
 
 mkdir -p "$TARGET/agents" "$TARGET/skills" "$TARGET/rules"
 
-# Merge-safe: only prune/replace agentsync's own entries; preserve anything the
-# user or another generator keeps in these shared dirs.
-sync_dir_files "$SRC/agents" "$TARGET/agents"
+# Agents: generated from roles/, plus verbatim claude/agents/*.md (which win on
+# a name clash). Merge-safe: only agentsync-owned entries are pruned/replaced.
+stage="$(stage_agents claude "$SRC/agents" '*.md')"
+sync_dir_files "$stage" "$TARGET/agents" '*.md'
+rm -rf "$stage"
+
 sync_skill_dirs_verbatim "$SKILLS_SRC" "$TARGET/skills"
 
-if [[ -d "$SRC/rules" ]]; then
-    sync_dir_files "$SRC/rules" "$TARGET/rules"
-fi
+# Rules: shared rules/ (all surfaces) plus Claude-only claude/rules/ (wins on a
+# name clash).
+stage="$(mktemp -d "${TMPDIR:-/tmp}/agentsync-rules.XXXXXX")"
+for d in "$AGENTS_DIR/rules" "$SRC/rules"; do
+    [[ -d "$d" ]] || continue
+    for f in "$d"/*.md; do [[ -f "$f" ]] && cp -f "$f" "$stage/"; done
+done
+sync_dir_files "$stage" "$TARGET/rules" '*.md'
+rm -rf "$stage"
 
 if [[ -f "$SRC/CLAUDE.md" ]]; then
     CLAUDE_MD_DEST="$WORKSPACE_ROOT/$CLAUDE_MD_TARGET"
@@ -31,8 +40,10 @@ if [[ -f "$SRC/CLAUDE.md" ]]; then
     cp -f "$SRC/CLAUDE.md" "$CLAUDE_MD_DEST"
 fi
 
+# settings.json: written only if agentsync owns it or it doesn't exist yet — a
+# hand-written .claude/settings.json is never overwritten.
 if [[ -f "$SRC/settings.json" ]]; then
-    cp -f "$SRC/settings.json" "$TARGET/settings.json"
+    sync_owned_file "$SRC/settings.json" "$TARGET/settings.json"
 fi
 
 echo "Synced .claude/"

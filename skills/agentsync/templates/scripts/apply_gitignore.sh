@@ -48,16 +48,22 @@ block="$BEGIN
 $patterns
 $END"
 
+# The block goes through a file, not `awk -v`: BSD awk (macOS) rejects a -v
+# value that contains newlines.
+block_file="$(mktemp "${TMPDIR:-/tmp}/agentsync-gitignore.XXXXXX")"
+trap 'rm -f "$block_file" "$GITIGNORE.tmp"' EXIT
+printf '%s\n' "$block" > "$block_file"
+
 if [[ -f "$GITIGNORE" ]] && grep -qF "$BEGIN" "$GITIGNORE"; then
-    awk -v begin="$BEGIN" -v end="$END" -v block="$block" '
-        $0 == begin { print block; skip = 1; next }
+    awk -v begin="$BEGIN" -v end="$END" -v block_file="$block_file" '
+        $0 == begin { while ((getline l < block_file) > 0) print l; close(block_file); skip = 1; next }
         $0 == end   { skip = 0; next }
         skip != 1   { print }
     ' "$GITIGNORE" > "$GITIGNORE.tmp"
     mv "$GITIGNORE.tmp" "$GITIGNORE"
 else
     [[ -s "$GITIGNORE" ]] && printf '\n' >> "$GITIGNORE"
-    printf '%s\n' "$block" >> "$GITIGNORE"
+    cat "$block_file" >> "$GITIGNORE"
 fi
 
 echo "Applied .gitignore policy: OUTPUT_TRACKING=$OUTPUT_TRACKING"
