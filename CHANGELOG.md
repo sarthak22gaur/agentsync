@@ -2,6 +2,34 @@
 
 Notable changes per release. Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning is [SemVer](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0] - 2026-09-29
+
+### Changed
+- **Single-source roles.** Each agent is now one file, `agents/roles/<name>.md`: canonical frontmatter (`name`, `description`, `tier`, `access`, `surfaces`, `skills`) plus optional per-surface blocks for native-only keys. The new `scripts/gen_agents.sh` (bash 3.2 and BSD awk, no Python) generates the Claude, Codex, OpenCode, and Copilot files from it. It replaces four hand-kept copies per agent, which drifted: the plan-review directive, efforts, and models already differed between surfaces in real projects. Copilot agents are now generated too, instead of being verbatim-only. Hand-written agents in `agents/<surface>/agents/` are still copied verbatim and win on a name clash, so existing layouts keep syncing unchanged.
+- **Models are inherited, not pinned.** No template or bootstrap step writes a `model` anymore, on any surface. Every tool's subagents inherit the session or parent model when `model` is omitted (Claude, Codex, OpenCode, and Copilot docs all confirm this). A pinned name goes stale on renames and retirements, and in Codex an unknown slug stops the agent from starting. Bootstrap no longer asks for an OpenCode model. Roles pin only reasoning effort: `high` for architect, reviewer, and engineer, `medium` for the librarian. The code-reviewer moves from `xhigh` to `high`, because effort levels above `high` depend on the model.
+- **Codex agents are auto-discovered.** Current Codex docs define project agents as standalone `.codex/agents/*.toml` files. The `[agents.<name>]` registrations that 0.2.6 made mandatory are now opt-in (`CODEX_REGISTER_ROLES="yes"`) for older releases. `base.toml` drops model-slug examples (several were retired or are retiring) and the now-default `multi_agent` / legacy `max_threads` settings.
+- **Shared rules reach every surface.** Rules moved from `claude/rules/` to `rules/`, which syncs to `.claude/rules/` and is injected into the root `AGENTS.md` via a `<!-- agentsync:rules -->` marker, so Codex, OpenCode, and Copilot get them too. A `<!-- agentsync:roles -->` marker renders the agent table from `roles/`, so the roster Codex relies on can't go stale.
+- **Leaner CLAUDE.md.** It drops the agent and skill rosters (the runtime surfaces both, and the checked-in lists went stale) and keeps only orientation, rule headlines, and the source-of-truth note.
+- **Role bodies rewritten for current models.** Each rule is stated once instead of repeated per agent. The reviewer reports everything with severity and confidence, and whoever runs the loop filters (telling a reviewer to self-filter makes it drop real bugs). The architect verifies prior artifacts' claims, compares against standard patterns, keeps the design the size of the problem, and states each phase's expected footprint. The engineer implements at the written strength of the plan and refuses unrequested hardening.
+- **orchestrate**: the session model orchestrates, and spawns are explicit (Codex doesn't self-delegate). It adds complexity tiers for per-spawn model/effort choice (from what the runtime offers, not hardcoded names), grouping of small phases, fix/reject/escalate lanes under a defect bar, diff-size watching, a 3-round cap that never asks for more, "demand the final report", one optional peer-CLI gate at the end, and a commit per phase (folded in from the unreleased per-phase-commit change). The escalation rule is also reversed: commit reviewed work and escalate on top of it, never end a long run with zero commits.
+- **grill-plan** gains an adversarial/autonomous mode, defect-bar severity, required/adjacent/hypothetical classification, and a Scope Candidates section.
+- Skill frontmatter for `.agents/skills/` and `.github/skills/` is now reduced by an **allowlist** (`name`, `description`, `license`, `compatibility`, `metadata`; plus Copilot's invocation keys for `.github/skills/`). The old denylist stripped a key like `hooks:` but leaked its indented children as orphaned YAML.
+- The sync no longer writes `.codex/AGENTS.md` / `.opencode/AGENTS.md` (no tool reads them). Existing copies are removed only while they're still byte-identical to what agentsync wrote.
+- Preflight recognizes a renamed source-of-truth dir (any subdir with `agentsync.conf`), not just `agents/`.
+
+### Added
+- **grill-converge** skill: hardens a high-stakes plan by looping autonomous adversarial grills against in-place architect amendments until a round comes back clean, then gating once with the other CLI (`codex exec --sandbox read-only` / `claude -p`). It has a decided list, defect-bar severity, "amendments clarify, not grow", and a 3-round cap.
+- **Rules** `scope-discipline` (smallest sufficient change, scope gate, defect bar, frozen approved plans, tests that earn their place) and `verify-with-cli` (CLI checks over editor diagnostics; `tsc --noEmit` is a false green under TypeScript project references, so use `tsc -b`). `plan-before-code` now also keeps plan and phase references out of code, branches, commits, and PRs.
+- `claude/settings.json` template setting `attribution.commit` / `attribution.pr` to `false`, the documented keys that replace the deprecated `includeCoAuthoredBy`. It's written merge-safely: never over a settings file agentsync doesn't own.
+- `agentsync.conf`: `SURFACES`, `CODEX_EXEC_PREFIX` (bootstrap sets `direnv exec .` when an `.envrc` exists; generated Codex agents rewrite `cd <dir> && cmd` through it and carry a standing note), and `CODEX_REGISTER_ROLES`.
+- Driver guidance for an optional deterministic post-edit type-check reminder: a path-filtered `command` hook that emits `additionalContext` JSON. PostToolUse plain stdout never reaches the model, and an unfiltered LLM-judged `prompt` hook can stop an agent mid-task.
+- The sync warns when the rendered `AGENTS.md` exceeds Codex's default 32 KiB project-doc limit.
+- **Upgrades by version** entry for 0.3.0, covering migration to `roles/`, dropping pinned models, and moving rules.
+
+### Fixed
+- `apply_gitignore.sh` no longer passes the multi-line block through `awk -v`, which BSD awk (macOS) rejects.
+- `apply_gitignore.sh` and `sync_github.sh` were committed without the executable bit, so syncing depended on bootstrap's `chmod`. All scripts are now `100755`, and they call each other via `bash`.
+
 ## [0.2.6] - 2026-06-04
 
 ### Fixed

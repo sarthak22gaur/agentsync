@@ -10,25 +10,23 @@
 
 ## Agents
 
-| Agent | Role |
-|---|---|
-| architect | Design authority — plans, ADRs, system boundaries |
-| code-reviewer | Plan-driven review against project conventions |
-| librarian | Keeps `agents/` source-of-truth in sync with reality |
-| engineer | Implements features and fixes |
+<!-- agentsync:roles -->
 
-> **Codex has no agent picker.** Invoke a role by asking Codex to delegate — e.g. *"use the architect sub-agent to plan X"* or *"have the code-reviewer review this diff"*. Roles load only when the project is **trusted** (accept Codex's trust prompt the first time you run `codex` here); untrusted projects skip the `.codex/` config layer and no custom role is available.
+Delegate by naming the agent: "spawn the `architect` agent to plan X", "have the `code-reviewer` review this diff". Codex has no agent picker and never delegates on its own, so this list is how it knows what to spawn. Codex loads agents (and skills) only once the project is **trusted**.
 
 ## Skills
 
-- `grill-plan` — stress-test plans before execution
-- `orchestrate` — drive an approved plan: loop engineer → code-reviewer per phase
-- `{{PROJECT_NAME}}-ground-truth` — single source of truth for the project
+- `grill-plan`: stress-test a plan before work starts (interactive or adversarial)
+- `grill-converge`: harden a high-stakes plan with autonomous grill rounds plus one peer-CLI gate
+- `orchestrate`: drive an approved plan through engineer → code-reviewer, one phase at a time
+- `{{PROJECT_NAME}}-ground-truth`: project orientation (read this first)
 
-> **Codex has no per-skill `/` entry.** Skills aren't individual slash commands the way they are in Claude Code. Run `/skills` to list what's available, or just invoke one by name ("use the grill-plan skill on …") — Codex also pulls a skill in on its own when the task matches its description. Like agent roles, skills load only when the project is **trusted**.
+Codex has no per-skill `/` entry: run `/skills` to list skills, or invoke one by name.
 
-## Conventions
+## Source of truth
 
-- No AI attribution in commits or PR bodies.
-- Plan before code: architect plan + user approval before non-trivial implementation.
-- Source of truth for agents/skills is `agents/`. Edit there, then run `bash agents/scripts/sync_agents.sh`.
+Agents, skills, and rules live in `agents/`. Edit there, then run `bash agents/scripts/sync_agents.sh`. Never edit the generated `.claude/`, `.codex/`, `.opencode/`, `.agents/`, `.github/agents/`, or this file directly.
+
+## Rules
+
+<!-- agentsync:rules -->

@@ -1,37 +1,34 @@
 # agents/ — Source of Truth
 
-This directory is the canonical home for agents, skills, and rules in **{{PROJECT_NAME}}**. The contents of `.claude/`, `.codex/`, and `.opencode/` at the repo root are **generated** from here.
+This directory is the canonical home for agents, skills, and rules in **{{PROJECT_NAME}}**. Everything under `.claude/`, `.codex/`, `.opencode/`, `.agents/`, `.github/agents/`, and the root `AGENTS.md` is **generated** from here.
 
 ## Editing
 
-1. Edit files in `agents/claude/`, `agents/codex/`, `agents/opencode/`, `agents/skills/`, or `agents/rules/`.
-2. Run `bash agents/scripts/sync_agents.sh` to fan changes out to all surfaces.
-3. Commit both `agents/` and the synced `.claude/` etc. directories.
+1. Edit files here: a role in `roles/`, a skill in `skills/`, a rule in `rules/`.
+2. Run `bash agents/scripts/sync_agents.sh` to fan changes out to every enabled surface.
+3. Commit `agents/` (and whatever generated output `OUTPUT_TRACKING` in `agentsync.conf` says git tracks).
 
 ## Layout
 
 ```
 agents/
-  AGENTS.md          # workspace overview (rendered to repo root)
-  claude/
-    CLAUDE.md        # Claude system prompt
-    agents/          # Claude agent definitions (markdown)
-    rules/           # Hard rules surfaced to Claude
-  codex/
-    agents/          # Codex agent TOMLs (definitions)
-    configs/         # Codex config fragments (base.toml + global [agents]/[features])
-                     # sync appends an [agents.<name>] registration per agent to
-                     # .codex/config.toml — Codex won't spawn a role that isn't
-                     # registered there, and only in a trusted project.
-  opencode/
-    agents/          # OpenCode agent markdown
-  skills/            # Universal skills (consumed by all surfaces)
-  scripts/           # Sync scripts
+  AGENTS.md          # workspace guide → root AGENTS.md (roles table + shared rules injected)
+  agentsync.conf     # surfaces, CLAUDE.md location, tracking policy, Codex options
+  roles/             # ONE file per agent → generated for Claude, Codex, OpenCode, Copilot
+  rules/             # shared hard rules → .claude/rules/ and the root AGENTS.md
+  skills/            # shared skills → .claude/skills/, .agents/skills/, .github/skills/
+  claude/            # CLAUDE.md, settings.json, optional Claude-only agents/ and rules/
+  codex/configs/     # Codex config fragments → .codex/config.toml
+  scripts/           # gen_agents.sh + sync scripts
 ```
 
-## Never edit `.claude/`, `.codex/`, or `.opencode/` directly
+A role file has canonical frontmatter (`name`, `description`, `tier`, `access`, `surfaces`, `skills`) plus optional per-surface blocks (`claude:`, `codex:`, `opencode:`, `github:`) for keys only one tool understands, such as Claude hooks or Copilot handoffs. Roles set no `model`, so each agent inherits the session model. Add `model:` to a surface block only to pin one deliberately.
 
-They are regenerated on every sync. Your edits will be lost.
+To give one surface a hand-written agent, drop it in `claude/agents/`, `codex/agents/`, `opencode/agents/`, or `github/agents/`. It's copied verbatim and wins over a generated agent with the same name.
+
+## Never edit generated output directly
+
+It's regenerated on every sync, and your edits will be lost. The sync only touches what it wrote: files you or another tool keep in the same dirs are left alone.
 
 ---
 
