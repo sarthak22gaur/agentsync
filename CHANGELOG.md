@@ -2,6 +2,11 @@
 
 Notable changes per release. Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning is [SemVer](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.1] - 2026-09-30
+
+### Fixed
+- `claude/settings.json` set `attribution.commit` / `attribution.pr` to `false`, which the Claude Code settings schema rejects: both keys are strings, and an empty string `""` hides the attribution. The template, the `no-commit-attribution` rule, and the driver now use `""`, and a new **Upgrades by version** entry corrects projects already upgraded to 0.3.0.
+
 ## [0.3.0] - 2026-09-29
 
 ### Changed
@@ -20,7 +25,7 @@ Notable changes per release. Format follows [Keep a Changelog](https://keepachan
 ### Added
 - **grill-converge** skill: hardens a high-stakes plan by looping autonomous adversarial grills against in-place architect amendments until a round comes back clean, then gating once with the other CLI (`codex exec --sandbox read-only` / `claude -p`). It has a decided list, defect-bar severity, "amendments clarify, not grow", and a 3-round cap.
 - **Rules** `scope-discipline` (smallest sufficient change, scope gate, defect bar, frozen approved plans, tests that earn their place) and `verify-with-cli` (CLI checks over editor diagnostics; `tsc --noEmit` is a false green under TypeScript project references, so use `tsc -b`). `plan-before-code` now also keeps plan and phase references out of code, branches, commits, and PRs.
-- `claude/settings.json` template setting `attribution.commit` / `attribution.pr` to `false`, the documented keys that replace the deprecated `includeCoAuthoredBy`. It's written merge-safely: never over a settings file agentsync doesn't own.
+- `claude/settings.json` template setting `attribution.commit` / `attribution.pr` to hide attribution, the documented keys that replace the deprecated `includeCoAuthoredBy`. It's written merge-safely: never over a settings file agentsync doesn't own.
 - `agentsync.conf`: `SURFACES`, `CODEX_EXEC_PREFIX` (bootstrap sets `direnv exec .` when an `.envrc` exists; generated Codex agents rewrite `cd <dir> && cmd` through it and carry a standing note), and `CODEX_REGISTER_ROLES`.
 - Driver guidance for an optional deterministic post-edit type-check reminder: a path-filtered `command` hook that emits `additionalContext` JSON. PostToolUse plain stdout never reaches the model, and an unfiltered LLM-judged `prompt` hook can stop an agent mid-task.
 - The sync warns when the rendered `AGENTS.md` exceeds Codex's default 32 KiB project-doc limit.
