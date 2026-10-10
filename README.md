@@ -159,7 +159,7 @@ agentsync ships opinions, but they're all overridable:
 `agents/agentsync.conf` (sourced by the sync scripts; bootstrap writes it):
 
 ```sh
-AGENTSYNC_VERSION="0.4.0"          # stamped by agentsync; drives version-aware reconcile
+AGENTSYNC_VERSION="0.4.1"          # stamped by agentsync; drives version-aware reconcile
 SURFACES="claude codex opencode"   # any of: claude codex opencode github
 CLAUDE_MD_TARGET=".claude/CLAUDE.md"   # or "CLAUDE.md" for the repo root
 OUTPUT_TRACKING="root-docs"        # all | root-docs | none

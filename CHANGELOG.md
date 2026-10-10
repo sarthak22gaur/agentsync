@@ -2,6 +2,11 @@
 
 Notable changes per release. Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning is [SemVer](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.1] - 2026-10-10
+
+### Changed
+- `swarm` now says how lanes run. Lanes are separate sessions, never subagents: a lane runs `orchestrate`, which has to spawn its own engineer and reviewer, and a subagent can't spawn subagents. The coordinator writes a lane prompt (starting with `/swarm lane <lane> <plan>`) and launches each lane as a background Claude Code session (`claude --bg --name … --permission-mode …`) from the workspace root, recording session IDs in the ledger. On Codex or another runtime without background sessions, the user opens each lane's session. Lanes are watched with `claude agents` / `logs` and stopped with `claude stop`, and cleanup stops them. A new **Upgrades by version** entry merges this into existing `swarm` skills.
+
 ## [0.4.0] - 2026-10-10
 
 ### Added

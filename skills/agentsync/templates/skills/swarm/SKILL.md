@@ -8,6 +8,8 @@ argument-hint: "coordinator <plan path> | lane <lane> <plan path>"
 
 An orchestrator of orchestrators. The **coordinator** is the session the user talks to. Each **lane** is a separate agent session running `orchestrate` on one plan section. They share each repo through git worktrees and one integration branch per repo. Every rule and the `orchestrate` rules still apply inside each session. Lane branches stay local: never pushed, never PR'd.
 
+**Lanes are sessions, never subagents.** A lane runs `orchestrate`, which spawns its own engineer and reviewer subagents, and a subagent can't spawn subagents. A lane run as a subagent would also share the coordinator's context and turn budget. The coordinator's own work (shared-contract changes, merge reviews) does run as subagents in its session.
+
 Defaults (the plan's working rules win where they name something else):
 
 | Thing | Default |
@@ -16,8 +18,9 @@ Defaults (the plan's working rules win where they name something else):
 | Lane branch | `swarm/<lane>`, local only |
 | Lane worktree | `<worktrees-root>/<lane>/<repo>`, outside the main checkout, one per repo the lane touches |
 | Max active lanes | 4, plus the coordinator |
-| Ledger | `workspace/plans/.<plan-slug>.swarm.md`: lanes, branches, worktrees, PIDs, status, open requests, findings |
+| Ledger | `workspace/plans/.<plan-slug>.swarm.md`: lanes, branches, worktrees, session IDs, PIDs, status, open requests, findings |
 | Lane brief | `workspace/handoffs/swarm/<lane>.md` |
+| Lane prompt | `workspace/handoffs/swarm/<lane>.prompt.md` |
 
 ## Project specifics
 
@@ -37,11 +40,18 @@ You own the plan, the integration branches, the shared contracts, and the ledger
 2. **Worktree.** From each touched repo's main checkout: `git worktree add <worktrees-root>/<lane>/<repo> -b swarm/<lane> <integration-branch>`. Set up its environment per Project specifics, writing only inside the worktree.
 3. **Test isolation.** Provision the lane's test store per Project specifics. Creating a database is a write: show the user the exact commands and names once, and get a go.
 4. **Brief.** Write the lane brief with pointers only: plan path and lane section heading, decisions doc, owned paths per repo, integration branch, worktree paths, test env, the lane's dependencies, and which contracts are still stubs. Don't restate plan text.
-5. **Launch.** Ask the user to start a session from the workspace root (so rules and skills load) and run `swarm lane <lane> <plan>`. Record lane, branch, worktrees, and session name in the ledger.
+5. **Prompt.** Write the lane prompt. Its first line is `/swarm lane <lane> <plan>`, followed by pointers to the brief, worktree paths, and test env, and your own session name so the lane knows where to report.
+6. **Launch** from the workspace root, so rules and skills load:
+   - *Claude*: start a background session, `claude --bg --name <plan-slug>-<lane> --permission-mode <mode> "$(cat <lane prompt>)"`. It inherits the default model and effort; add `--model` / `--effort` only if the project pins them. Use the permission mode the user approved for unattended work, and ask once if they haven't said.
+   - *Codex*, or a runtime without background sessions: ask the user to open a session per lane in its own terminal and paste the prompt. Codex can't message other sessions, so the ledger and the user carry every report.
+
+   Record lane, branch, worktrees, session name, and session ID in the ledger.
 
 ### Messaging
 
 If the runtime can list and message other sessions (Claude Code's `ListAgents` / `SendMessage`, for one), use it. Otherwise the user relays. Either way the ledger is the durable record. Keep messages short and pointer-based: "integration tip of `<repo>` is `<sha>`, merge it", "request 3 accepted, contract at `<path>` in `<sha>`". Never paste a lane's transcript back to it.
+
+Watch and control background lanes with `claude agents` (list), `claude logs <id>` (recent output), `claude stop <id>` (stop; the conversation is kept), and `claude attach <id>` (open or resume one).
 
 ### Merge protocol
 
@@ -79,7 +89,7 @@ The lanes form a dependency graph, not a sequence. The **frontier** is the set o
 
 ### Cleanup
 
-When the plan's final phase is done: per repo, `git worktree remove <path>` and `git branch -d swarm/<lane>` (merged branches only, never `-D`). Stop every PID in the ledger, check for leaked test containers, and drop lane test databases only after the user confirms the exact statements. Mark the ledger closed. The integration branch stays; open PRs only when the user asks.
+When the plan's final phase is done: per repo, `git worktree remove <path>` and `git branch -d swarm/<lane>` (merged branches only, never `-D`). Stop every lane session (`claude stop <id>`) and every PID in the ledger, check for leaked test containers, and drop lane test databases only after the user confirms the exact statements. Mark the ledger closed. The integration branch stays; open PRs only when the user asks.
 
 ## Lane
 
