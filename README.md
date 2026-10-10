@@ -10,9 +10,25 @@ If you use more than one AI coding tool, you end up maintaining the same agent, 
 
 ## Two modes
 
-**Bootstrap** (fresh project) scaffolds the `agents/` source-of-truth tree: four single-source role agents (architect, code-reviewer, engineer, librarian), four shared hard rules (no AI attribution, plan before code, scope discipline and a defect bar for reviews, verify with the CLI rather than the editor), the `grill-plan`, `grill-converge`, and `orchestrate` skills, and the sync scripts. It then **analyzes your codebase** to generate a project-specific `<project>-ground-truth` skill, so agents start with real orientation.
+**Bootstrap** (fresh project) scaffolds the `agents/` source-of-truth tree: four single-source role agents (architect, code-reviewer, engineer, librarian), five shared hard rules (no AI attribution, plan before code, scope discipline and a defect bar for reviews, verify with the CLI rather than the editor, and durable references that keep private planning paths out of code and commits), a set of workflow skills, and the sync scripts. It then **analyzes your codebase** to generate a project-specific `<project>-ground-truth` skill, so agents start with real orientation.
 
 **Reconcile** (existing setup) — audits an existing `agents/` setup for: structural gaps (missing agents, surfaces, or rules), sync drift (a tool's generated files were hand-edited or never re-synced), stale ground-truth (documented paths or stack that no longer match the code), and version upgrades or template improvements you haven't picked up, including migrating a pre-0.3.0 per-surface layout to single-source roles. It reports findings first, then applies only what you approve — it never clobbers your customizations.
+
+### Skills
+
+| Skill | What it does | Installed |
+|---|---|---|
+| `grill-plan` | Stress-test a plan, interactively or as an adversarial pass | always |
+| `grill-converge` | Harden a high-stakes plan: grill rounds against architect amendments, then one peer-CLI gate | always |
+| `orchestrate` | Drive an approved plan through engineer → code-reviewer, phase by phase, committing as it goes | always |
+| `diagnosing-bugs` | Build a red-capable feedback loop, then reproduce, minimise, hypothesise, instrument, and fix with a regression test (ships a human-in-the-loop script template) | by default |
+| `cleanup-loop` | Audit → triage → fix → verify against concrete criteria until clean | by default |
+| `handoff` | Write a compact handoff document before a context reset or compaction | by default |
+| `swarm` | Run a lane-structured plan as a coordinator plus parallel lane sessions in git worktrees, with a merge protocol, interface change requests, and a ledger | opt-in |
+| `port` | Port behavior from a source system into this codebase: tests first, an idiom map, a semantic-traps checklist, and a port log | opt-in |
+| `<project>-ground-truth` | Project orientation, generated from your codebase | always |
+
+Skills with project-specific parts (verification commands, test isolation, the idiom map) carry `<fill in: …>` markers. agentsync fills the ones it can ground in your code and lists the rest.
 
 ## How it works
 
@@ -22,7 +38,7 @@ agents/                      # ← you edit here (source of truth)
   agentsync.conf             # surfaces, CLAUDE.md location, tracking policy, Codex options
   roles/    { architect.md, code-reviewer.md, engineer.md, librarian.md }   # one file per agent
   rules/    { *.md }         # shared hard rules
-  skills/   { grill-plan/, grill-converge/, orchestrate/, <project>-ground-truth/ }
+  skills/   { grill-plan/, orchestrate/, diagnosing-bugs/, …, <project>-ground-truth/ }
   claude/   { CLAUDE.md, settings.json }
   codex/    { configs/ }
   scripts/  { gen_agents.sh, sync_*.sh }
@@ -37,7 +53,7 @@ bash agents/scripts/sync_agents.sh
         └── AGENTS.md     (read by Codex, OpenCode, Copilot)
 ```
 
-A role file has canonical frontmatter (`name`, `description`, `tier` for reasoning effort, `access` for read-only vs write, `surfaces`, `skills`) plus optional per-surface blocks for keys only one tool understands, such as Claude hooks, Codex nicknames, or Copilot handoffs. **No model is pinned anywhere**: every tool's subagents inherit the session model by default, and a pinned name goes stale the next time models are renamed or retired.
+A role file has canonical frontmatter (`name`, `description`, `effort` for reasoning effort, `maxTurns` for the turn cap, `access` for read-only vs write, `surfaces`, `skills`) plus optional per-surface blocks for keys only one tool understands, such as Claude hooks, Codex nicknames, or Copilot handoffs. **No model is pinned anywhere**: every tool's subagents inherit the session model by default, and a pinned name goes stale the next time models are renamed or retired.
 
 The sync scripts use only paths derived from their own location, so the generated `agents/` tree is fully portable — there are no machine-specific paths baked in.
 
@@ -94,6 +110,7 @@ agents/
 │   └── librarian.md
 ├── rules/
 │   ├── no-commit-attribution.md
+│   ├── durable-references.md
 │   ├── plan-before-code.md
 │   ├── scope-discipline.md
 │   └── verify-with-cli.md
@@ -101,6 +118,9 @@ agents/
 │   ├── grill-plan/SKILL.md
 │   ├── grill-converge/SKILL.md     # ← harden a plan: grill rounds + one peer-CLI gate
 │   ├── orchestrate/SKILL.md        # ← drive a plan: engineer → reviewer per phase
+│   ├── diagnosing-bugs/            # ← SKILL.md + scripts/hitl-loop.template.sh
+│   ├── cleanup-loop/SKILL.md
+│   ├── handoff/SKILL.md
 │   └── acme-api-ground-truth/      # ← generated by analyzing the codebase
 │       └── SKILL.md
 ├── claude/
@@ -127,7 +147,8 @@ agentsync ships opinions, but they're all overridable:
 
 - **Four role agents** (architect / code-reviewer / engineer / librarian) are a starting taxonomy. Add, remove, rename, or split them (e.g. backend/frontend engineers). Each is one file under `agents/roles/`.
 - **Models are inherited, not pinned.** To pin one deliberately, add `model:` to that role's surface block.
-- **Reasoning effort** is set per role (`tier`): `high` for architect, reviewer, and engineer, and `medium` for the librarian.
+- **Reasoning effort and turn caps** are set per role (`effort`, `maxTurns`): `high` effort for architect, reviewer, and engineer, and `medium` for the librarian. A role that omits them gets `high` and 150 turns (60 if read-only).
+- **Optional skills**: `swarm` and `port` are opt-in; `diagnosing-bugs`, `cleanup-loop`, and `handoff` are on by default. Declined ones are recorded in `SKILLS_DECLINED` so reconcile doesn't keep offering them.
 - **Base branch** defaults to `main` (`develop` if a `develop` branch already exists).
 - **Rules** are opinionated and meant to be edited or dropped if they don't fit your workflow.
 - **Surfaces**: Claude, Codex, and OpenCode are on by default. Drop any you don't use, or add GitHub Copilot (opt-in).
@@ -138,11 +159,12 @@ agentsync ships opinions, but they're all overridable:
 `agents/agentsync.conf` (sourced by the sync scripts; bootstrap writes it):
 
 ```sh
-AGENTSYNC_VERSION="0.3.0"          # stamped by agentsync; drives version-aware reconcile
+AGENTSYNC_VERSION="0.4.0"          # stamped by agentsync; drives version-aware reconcile
 SURFACES="claude codex opencode"   # any of: claude codex opencode github
 CLAUDE_MD_TARGET=".claude/CLAUDE.md"   # or "CLAUDE.md" for the repo root
 OUTPUT_TRACKING="root-docs"        # all | root-docs | none
 CODEX_EXEC_PREFIX=""               # e.g. "direnv exec ." — set at bootstrap when an .envrc exists
+SKILLS_DECLINED=""                 # optional skills reconcile shouldn't offer again, e.g. "swarm port"
 CODEX_REGISTER_ROLES="no"          # "yes" only for older Codex that doesn't auto-discover .codex/agents/
 ```
 

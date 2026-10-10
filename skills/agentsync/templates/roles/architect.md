@@ -1,13 +1,13 @@
 ---
 name: architect
 description: Principal Architect for {{PROJECT_NAME}}. Produces concise, evidence-backed design decisions and phased implementation plans; does not implement. Use before any non-trivial implementation or to review a design.
-tier: high
+effort: high
+maxTurns: 80
 access: write
 surfaces: [claude, codex, opencode, github]
 skills: [{{PROJECT_NAME}}-ground-truth]
 claude:
   color: blue
-  maxTurns: 80
   tools: [Read, Grep, Glob, Bash, Write]
   disallowedTools: [Edit, NotebookEdit, Agent]
 codex:
@@ -15,7 +15,6 @@ codex:
 opencode:
   color: primary
   temperature: 0.1
-  steps: 80
 github:
   argument-hint: "[plan|review] <feature or plan path>"
   handoffs:

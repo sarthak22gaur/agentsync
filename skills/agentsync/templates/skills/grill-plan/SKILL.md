@@ -13,7 +13,7 @@ Turn fuzzy intent into a decision that's ready to implement. Keep it tight: the 
 - **Interactive (default):** the user is present. Ask one question at a time, each with your recommended answer and why.
 - **Adversarial (autonomous, e.g. from `grill-converge`):** no user is present. Ask no questions. Verify every claim against the code, treat the supplied decided list as settled, and return a numbered BLOCKER / MAJOR / MINOR list, each item with `path:line` evidence and a concrete fix. Find what's wrong or missing; don't praise.
 
-In both modes, severity follows the defect bar (the `scope-discipline` rule). BLOCKER and MAJOR need a real trigger, an observable consequence, and `path:line` evidence. Don't invent an adversary the plan never declared, and don't restate a requirement more strictly and then fault the plan for missing your version. **A pass that finds only hypotheticals is a clean pass: say so.**
+In both modes, severity follows the defect bar (the `scope-discipline` rule). BLOCKER and MAJOR need a real trigger, an observable consequence, and `path:line` evidence. Don't invent an adversary the plan never declared, and don't restate a requirement more strictly and then fault the plan for missing your version. **A pass that finds only hypotheticals is a clean pass: say so.** Finding nothing blocking is a valid and common result; manufacturing a MAJOR to justify the pass is the failure mode to avoid.
 
 Classify every finding as **required** (the plan's fix doesn't work without it), **adjacent confirmed defect**, or **hypothetical**. Only required items go into the recommendation. The rest go under Scope Candidates. If the plan already looks overengineered for the problem it solves, make that your top finding.
 
@@ -26,7 +26,7 @@ Classify every finding as **required** (the plan's fix doesn't work without it),
 
 ## Process
 
-1. Identify the artifact, the target repo, and the expected output. Ask one clarifying question only if something is genuinely ambiguous.
+1. Identify the artifact (plan, feature, bug approach, agent handoff), the target repo, and the expected output. Ask one clarifying question only if something is genuinely ambiguous.
 2. Read what's already there: `AGENTS.md`, relevant `workspace/{plans,docs,knowledge}/`, the code behind any behavior claim, the project's `{{PROJECT_NAME}}-ground-truth` skill, and any `<area>-patterns` skill for the target area.
 3. Ask (or, in adversarial mode, check) the highest-leverage unresolved point, roughly in this order: goal and non-goals, user-visible behavior, contracts that change, existing constraints, risk and reversibility, verification, who executes.
 4. If durable domain language or rationale comes up, propose a `workspace/knowledge/` update, but edit it only when asked.
@@ -48,7 +48,7 @@ Stop when the next implementation step is obvious, the remaining unknowns are li
 - ...
 
 ## Scope Candidates
-- `path:line` — <finding> | blocking: <yes/no> | smallest change: <...> | recommendation: <include / backlog / discard>
+- `path:line` — <finding> | blocking: <yes/no> | smallest change: <...> | scope increase: <...> | recommendation: <include / backlog / discard>
 
 ## Evidence
 - `path:line` — ...
