@@ -1,6 +1,6 @@
 ---
 name: agentsync
-description: Bootstrap OR reconcile a multi-surface agent/skill system in any project. On a fresh project, scaffolds a source-of-truth agents/ directory with single-source role files (architect, code-reviewer, engineer, librarian) generated for Claude Code, Codex, OpenCode, and GitHub Copilot, shared hard rules, the grill-plan / grill-converge / orchestrate skills, and sync scripts, then analyzes the codebase to generate a project ground-truth skill. On a project that already has a setup, audits it for gaps, sync drift, stale ground-truth, and version upgrades, then updates it in place without clobbering customizations. Use when starting a new project, onboarding agents into an existing one, or refreshing an existing agent setup.
+description: Bootstrap OR reconcile a multi-surface agent/skill system in any project. On a fresh project, scaffolds a source-of-truth agents/ directory with single-source role files (architect, code-reviewer, engineer, librarian) generated for Claude Code, Codex, OpenCode, and GitHub Copilot, shared hard rules, the grill-plan / grill-converge / orchestrate / diagnosing-bugs / cleanup-loop / handoff skills (plus opt-in swarm and port), and sync scripts, then analyzes the codebase to generate a project ground-truth skill. On a project that already has a setup, audits it for gaps, sync drift, stale ground-truth, and version upgrades, then updates it in place without clobbering customizations. Use when starting a new project, onboarding agents into an existing one, or refreshing an existing agent setup.
 argument-hint: "[project-name] — optional; defaults to basename of cwd"
 ---
 
@@ -10,18 +10,18 @@ Bootstrap an agent/skill system in any project from a single source-of-truth `ag
 
 The templates this skill copies from live alongside it at `${CLAUDE_PLUGIN_ROOT}/skills/agentsync/templates/` when installed as a plugin, or `~/.claude/skills/agentsync/templates/` when installed standalone. They're the canonical version: edit them there to evolve future scaffolds.
 
-**This skill is agentsync `0.3.1`.** (Release chore: bump this string with every version.) Bootstrap stamps it into `agents/agentsync.conf` as `AGENTSYNC_VERSION`. On reconcile, compare the project's stamped version with this one. If this one is newer, apply the intervening versions' enhancements (see [Upgrades by version](#upgrades-by-version)) and re-stamp.
+**This skill is agentsync `0.4.0`.** (Release chore: bump this string with every version.) Bootstrap stamps it into `agents/agentsync.conf` as `AGENTSYNC_VERSION`. On reconcile, compare the project's stamped version with this one. If this one is newer, apply the intervening versions' enhancements (see [Upgrades by version](#upgrades-by-version)) and re-stamp.
 
 ## How the source of truth is shaped
 
-- `roles/<name>.md`: **one file per agent.** Canonical frontmatter (`name`, `description`, `tier`, `access`, `surfaces`, `skills`) plus optional per-surface blocks (`claude:`, `codex:`, `opencode:`, `github:`) holding keys only that tool understands. `scripts/gen_agents.sh` derives each tool's native file from it. This replaces the pre-0.3.0 layout of four hand-kept copies per agent, which drifted apart.
+- `roles/<name>.md`: **one file per agent.** Canonical frontmatter (`name`, `description`, `effort`, `maxTurns`, `access`, `surfaces`, `skills`) plus optional per-surface blocks (`claude:`, `codex:`, `opencode:`, `github:`) holding keys only that tool understands. `scripts/gen_agents.sh` derives each tool's native file from it. This replaces the pre-0.3.0 layout of four hand-kept copies per agent, which drifted apart.
 - `rules/*.md`: shared hard rules. They go to `.claude/rules/` and are injected into the root `AGENTS.md`, which Codex, OpenCode, and Copilot read. Claude-only rules can live in `claude/rules/`.
-- `skills/<name>/SKILL.md`: shared skills, fanned out to `.claude/skills/`, `.agents/skills/`, and `.github/skills/` (frontmatter trimmed to portable keys for the non-Claude targets).
+- `skills/<name>/SKILL.md` (plus any files beside it, such as `scripts/`): shared skills, fanned out to `.claude/skills/`, `.agents/skills/`, and `.github/skills/` (frontmatter trimmed to portable keys for the non-Claude targets).
 - `claude/agents/`, `codex/agents/`, `opencode/agents/`, `github/agents/` (all optional): hand-written, verbatim, single-surface agents. A verbatim file wins over a generated one with the same name.
 
 ### Model policy: inherit, don't pin
 
-Role files set **no `model`** on any surface. Every tool inherits by default: a Claude subagent without `model` falls back to the main conversation's model; Codex subagents inherit the parent's model and effort; OpenCode subagents use the invoking primary agent's model; Copilot uses the model picker's selection. Pinned model names go stale on renames and retirements, and on Codex an unknown slug stops the agent from starting. Roles pin only **reasoning effort** via `tier` (Claude `effort`, Codex `model_reasoning_effort`). The defaults are `high` for architect, code-reviewer, and engineer, and `medium` for the librarian. These levels are supported broadly; `xhigh` and `max` depend on the model, so opt into them per project. Per-spawn model choices (a cheaper model for a mechanical phase) belong in the `orchestrate` skill at run time, not in the role files. Pin a model only when the user asks, by adding `model:` to that role's surface block.
+Role files set **no `model`** on any surface. Every tool inherits by default: a Claude subagent without `model` falls back to the main conversation's model; Codex subagents inherit the parent's model and effort; OpenCode subagents use the invoking primary agent's model; Copilot uses the model picker's selection. Pinned model names go stale on renames and retirements, and on Codex an unknown slug stops the agent from starting. Roles pin only **reasoning effort** via `effort` (Claude `effort`, Codex `model_reasoning_effort`; `tier` is the pre-0.4.0 name and still works) and a turn cap via `maxTurns` (Claude `maxTurns`, OpenCode `steps`). When a role omits them, the generator uses `high` effort and 150 turns (60 for read-only roles). The template defaults are `high` for architect, code-reviewer, and engineer, and `medium` for the librarian. These levels are supported broadly; `xhigh` and `max` depend on the model, so opt into them per project. Per-spawn model choices (a cheaper model for a mechanical phase) belong in the `orchestrate` skill at run time, not in the role files. Pin a model only when the user asks, by adding `model:` to that role's surface block.
 
 ---
 
@@ -54,6 +54,7 @@ Ask the user for the following. Offer defaults, and batch the questions unless o
 | `surfaces` | `claude codex opencode` | Any of `claude codex opencode github`. `github` (Copilot) is opt-in |
 | `claude_md_target` | `.claude/CLAUDE.md` | Offer root `CLAUDE.md` as the alternative |
 | `repo_shape` | detected | `single` or `multi` |
+| `skills` | `diagnosing-bugs cleanup-loop handoff` on; `swarm` and `port` off | Opt-in: `swarm` (parallel lane sessions in git worktrees, worth it only for large lane-structured plans) and `port` (porting behavior from another system or language). `grill-plan`, `grill-converge`, and `orchestrate` are always installed |
 
 Don't ask about models (see the model policy above).
 
@@ -81,6 +82,8 @@ Copy the agentsync templates directory into `<workspace-root>/agents/`, renaming
 
 Then:
 - Delete `agents/codex/` if `codex` isn't a selected surface, and `agents/claude/` if `claude` isn't. Leave the role files alone: `SURFACES` decides what gets generated.
+- Delete `agents/skills/<name>/` for each optional skill the user didn't select, and its line from the **Skills** list in `agents/AGENTS.md`. Record declined opt-in skills in `SKILLS_DECLINED` in `agentsync.conf`, so reconcile doesn't offer them again.
+- Some skills carry `<fill in: …>` markers for project specifics (verification commands, test isolation, the idiom map). After Step 3, fill each one you can ground in the ground-truth skill, a manifest, or the code. Leave the rest as markers and list them in the report. Never invent a value.
 - In `agents/agentsync.conf`, set `CLAUDE_MD_TARGET`, `OUTPUT_TRACKING` (default `root-docs`), and `CODEX_EXEC_PREFIX` if Step 1 detected an environment loader.
 - In a **multi-repo workspace**, keep the `base.toml` note that `codex` must be launched from the workspace root. Codex treats the nearest `.git` as the project root, so launching inside a sub-repo skips workspace-level config.
 - `chmod +x agents/scripts/*.sh`. The scripts also call each other via `bash`, so a lost exec bit doesn't break the sync.
@@ -193,11 +196,13 @@ Print:
 
 ### Skills
 - grill-plan, grill-converge, orchestrate
+- diagnosing-bugs, cleanup-loop, handoff (unless declined); swarm, port (if selected)
+- Unfilled `<fill in: …>` markers: <skill: section, …>   # if any
 - {{project_name}}-ground-truth (generated)
 - <area>-patterns (if generated)
 
 ### Rules (shared: .claude/rules/ + AGENTS.md)
-- no-commit-attribution, plan-before-code, scope-discipline, verify-with-cli
+- durable-references, no-commit-attribution, plan-before-code, scope-discipline, verify-with-cli
 
 ### Models
 - Inherited on every surface (none pinned). Reasoning effort per role: architect/code-reviewer/engineer high, librarian medium.
@@ -235,7 +240,9 @@ Compare and collect findings. Do NOT fix yet.
 - Missing surfaces (e.g. project has `claude/` + `codex/` but not `opencode/`, and the user wants all three). `github/` is opt-in — only flag it as missing if the user uses Copilot.
 - Read `agents/agentsync.conf` if present: a root-`CLAUDE.md` layout (`CLAUDE_MD_TARGET="CLAUDE.md"`) is intentional, not sync drift. Under `OUTPUT_TRACKING=none`/`root-docs`, a gitignored output dir (`.claude/` etc.) being absent or untracked is expected — never flag it as a missing surface.
 - `.gitignore` agentsync block drifts from `OUTPUT_TRACKING` → propose re-applying the policy (the re-sync fixes it).
-- Missing shared rules (`no-commit-attribution`, `plan-before-code`, `scope-discipline`, `verify-with-cli`), in `rules/` (or, pre-0.3.0, `claude/rules/`).
+- Missing shared rules (`durable-references`, `no-commit-attribution`, `plan-before-code`, `scope-discipline`, `verify-with-cli`), in `rules/` (or, pre-0.3.0, `claude/rules/`).
+- Missing template skills: each `templates/skills/<name>/` absent from `agents/skills/`. Skip any listed in `SKILLS_DECLINED`. Before calling one missing, check whether the project has its own version under another name (a `<project>-port` skill, a `debug` skill with the same phases): treat that as a customization and offer only the sections it lacks, never a second copy. Offer `diagnosing-bugs`, `cleanup-loop`, and `handoff` as recommended, and `swarm` and `port` as opt-in.
+- Unfilled `<fill in: …>` markers in installed skills: offer to fill the ones the code or ground-truth can ground.
 - Legacy per-surface agents with no `roles/` → propose the 0.3.0 migration to single-source roles (see the ledger).
 - Missing or outdated sync scripts (compare script bodies; flag if the template script has fixes the local one lacks).
 - A role present in one surface but not another (legacy layout), or per-surface copies of one agent whose directives have drifted apart. This is the main argument for migrating to `roles/`.
@@ -303,12 +310,12 @@ Ask the user which findings to apply. Default recommendation: apply all structur
 
 ## R4 — Apply (only approved findings)
 
-- **Structural gaps**: copy the missing template file into `agents/`, render placeholders. For a new surface, add it to `SURFACES` (plus `codex/configs/` for Codex).
+- **Structural gaps**: copy the missing template file into `agents/`, render placeholders. A new skill gets its whole directory (`scripts/` included), a line in the `agents/AGENTS.md` **Skills** list, and its `<fill in: …>` markers filled where grounded. A skill the user declines goes into `SKILLS_DECLINED`. Never copy over an existing skill directory: an existing skill with the template's name is a customization, so merge in only missing sections, with the diff shown. For a new surface, add it to `SURFACES` (plus `codex/configs/` for Codex).
 - **Sync drift from direct-target edits**: back-port the target's edit into the `agents/` source first, then re-sync (so the edit survives). Confirm with the user which version wins if both diverged.
 - **Stale ground-truth**: edit the ground-truth skill surgically. Same anti-bloat discipline as Mode A — remove dead claims, add only grounded new ones, cap length. Never pad.
 - **Stale AGENTS.md/CLAUDE.md fields**: edit the source (`agents/AGENTS.md`, `agents/claude/CLAUDE.md`) — only the drifted derived fields — then re-sync. Leave hand-written prose untouched.
 - **Version upgrades & content drift**: merge each approved enhancement into the existing role (or legacy agent) file. Keep the user's role prose, insert the missing directive, and apply the effort change. Show the diff.
-- **Migration to `roles/`** (0.3.0): for each agent, write `roles/<name>.md` whose body starts from the most complete existing variant (usually the Claude one), folding in any directive only another surface's copy had. Carry each surface's native-only keys into its block: Claude `color`/`maxTurns`/`hooks`/`permissionMode`/`disallowedTools`, Codex `nickname_candidates`, OpenCode `temperature`/`steps`/`color`, Copilot `handoffs`/`argument-hint`. Map `effort`/`model_reasoning_effort` to `tier` and tools/sandbox to `access`. Remove the migrated per-surface files only after a scratch sync shows equivalent output, and show the user the before/after for one agent first. Agents that exist on one surface only can stay as verbatim per-surface files.
+- **Migration to `roles/`** (0.3.0): for each agent, write `roles/<name>.md` whose body starts from the most complete existing variant (usually the Claude one), folding in any directive only another surface's copy had. Carry each surface's native-only keys into its block: Claude `color`/`maxTurns`/`hooks`/`permissionMode`/`disallowedTools`, Codex `nickname_candidates`, OpenCode `temperature`/`steps`/`color`, Copilot `handoffs`/`argument-hint`. Map `effort`/`model_reasoning_effort` to `effort` (and a shared `maxTurns`/`steps` to `maxTurns`), and tools/sandbox to `access`. Remove the migrated per-surface files only after a scratch sync shows equivalent output, and show the user the before/after for one agent first. Agents that exist on one surface only can stay as verbatim per-surface files.
 - **Re-stamp**: once the approved version upgrades are applied, set `AGENTSYNC_VERSION` in `agents/agentsync.conf` to this skill's version (create the conf if the project lacked one). If the user declined some upgrades, do **not** advance the stamp past them — leave it at the newest version whose upgrades are fully applied, so the rest resurface next run.
 - **Never** overwrite a customized agent's role description wholesale. When a template stub and a customized file conflict, the customization wins for prose; the template wins only for newly-added hard rules, and only with user sign-off.
 
@@ -344,6 +351,14 @@ Reconcile uses this ledger to bring a project generated by an older agentsync up
   9. **Skills.** Replace `orchestrate` and `grill-plan` with the current templates, merging project-specific additions (area routing, test policy, push-after-commit, etc.). Add `grill-converge`. If the project already has its own `grill-converge`, offer the template's shape (a native loop, then one peer-CLI gate at the end, instead of two engines every round) as a merge.
   10. Re-sync, then confirm: each surface has its agents, `.claude/settings.json` exists (or was reported as skipped), the root `AGENTS.md` contains the roles table and rules, and stale `.codex/AGENTS.md` / `.opencode/AGENTS.md` copies are gone.
 - **0.3.1** — **Fix the attribution values.** 0.3.0 shipped `claude/settings.json` with `"commit": false` / `"pr": false`, which the Claude Code settings schema rejects (both keys are strings; an empty string hides the attribution). In `agents/claude/settings.json` (or wherever the project's `attribution` block lives), change any `false` under `attribution.commit` / `attribution.pr` to `""`. In `agents/rules/no-commit-attribution.md`, change the mention of `false` to `""`. Then re-sync.
+
+- **0.4.0** — **New skills, the code-quality ladder, durable references, and per-role effort and turn caps.** Walk these as separate, individually approvable findings:
+  1. **New skills.** Offer `diagnosing-bugs` (with `scripts/hitl-loop.template.sh`), `cleanup-loop`, and `handoff` as recommended, and `swarm` and `port` as opt-in, per R2's "Missing template skills" (skip `SKILLS_DECLINED`; merge into a project's own variant instead of adding a second copy). Add `SKILLS_DECLINED=""` to `agentsync.conf`, and record whatever the user declines there.
+  2. **Roles.** Merge the engineer's **Code quality** section (the ladder: reuse the codebase, then the stdlib or framework, then an existing dependency, then the minimum code; it governs how, never cuts scope) into every engineer role, adapting rung 2 to the project's stack if the user wants. Merge the reviewer's **Code quality ladder** check, its "concrete failure case / `no concrete case`" sentence, and "grep every caller" into every reviewer role. Keep the user's prose.
+  3. **Scripts.** Replace `agents/scripts/gen_agents.sh` with the current template. It reads `effort` (falling back to `tier`) and a top-level `maxTurns`, and defaults to `high` and 150 (60 read-only). A role that already sets `tier` and per-surface `maxTurns` / `steps` generates identical output (per-surface keys still win). A role that set neither now gets the defaults: list those roles for the user before re-syncing. Optionally rename `tier:` to `effort:` and hoist a `maxTurns` shared by the Claude and OpenCode blocks to the top level.
+  4. **Rules.** Add `rules/durable-references.md` and remove the "Plans stay private" section from `rules/plan-before-code.md` (it moved and broadened). In `rules/scope-discipline.md`, merge the two new defect-bar paragraphs (security framing isn't a trigger; engine severity is only a suggestion) and "commit reviewed, verified work before escalating". Merge, don't overwrite.
+  5. **Skills.** In `orchestrate`, replace "Size the work, then the model" with "Size the work" plus the **Subagent model policy** (Claude subagents inherit one model and their role's effort, never overridden per spawn; tier models only for a client whose spawns take a model, such as Codex, with reviewers and the architect always on the strongest), add the `swarm` pointer, and add the multi-repo peer-gate note. In `grill-converge`, merge the one-subagent-per-round grill, "demand the report", the monotonic 3-round cap, and the multi-repo peer-gate note. In `grill-plan`, merge the "manufacturing a MAJOR" line and the `scope increase` field. Keep project-specific routing and commands.
+  6. Re-sync, then confirm the new skills reached `.claude/skills/` and `.agents/skills/` (with `diagnosing-bugs/scripts/`), and the root `AGENTS.md` lists them and carries the `durable-references` rule.
 
 ---
 

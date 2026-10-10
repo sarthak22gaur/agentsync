@@ -22,7 +22,7 @@ agents/
   scripts/           # gen_agents.sh + sync scripts
 ```
 
-A role file has canonical frontmatter (`name`, `description`, `tier`, `access`, `surfaces`, `skills`) plus optional per-surface blocks (`claude:`, `codex:`, `opencode:`, `github:`) for keys only one tool understands, such as Claude hooks or Copilot handoffs. Roles set no `model`, so each agent inherits the session model. Add `model:` to a surface block only to pin one deliberately.
+A role file has canonical frontmatter (`name`, `description`, `effort`, `maxTurns`, `access`, `surfaces`, `skills`) plus optional per-surface blocks (`claude:`, `codex:`, `opencode:`, `github:`) for keys only one tool understands, such as Claude hooks or Copilot handoffs. Roles set no `model`, so each agent inherits the session model. Add `model:` to a surface block only to pin one deliberately.
 
 To give one surface a hand-written agent, drop it in `claude/agents/`, `codex/agents/`, `opencode/agents/`, or `github/agents/`. It's copied verbatim and wins over a generated agent with the same name.
 

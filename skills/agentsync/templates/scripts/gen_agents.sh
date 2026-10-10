@@ -7,14 +7,19 @@
 #
 # Role frontmatter (flat `key: value` lines, plus indented per-surface blocks):
 #   name, description          required
-#   tier                       reasoning effort on every surface (low|medium|high|xhigh)
+#   effort                     reasoning effort: Claude `effort`, Codex
+#                              `model_reasoning_effort` (low|medium|high|xhigh).
+#                              `tier` is the pre-0.4.0 name and still works.
+#                              Default: high.
+#   maxTurns                   turn cap: Claude `maxTurns`, OpenCode `steps`.
+#                              Default: 150 for write access, 60 for read-only.
 #   access                     write | read-only  → tools / sandbox / permissions
 #   surfaces                   [claude, codex, opencode, github] — where it's emitted
 #   skills                     [a, b] — preloaded (Claude) / listed as Required Skills
 #   claude: / codex: / opencode: / github:
 #                              indented native keys passed through to that surface
 #                              only (e.g. Claude hooks, Copilot handoffs). A key set
-#                              here overrides the derived one (tools, permission, …).
+#                              here overrides the derived one (tools, effort, steps, …).
 #                              For codex, `key: value` lines become `key = value`.
 #
 # No `model` is emitted anywhere unless a per-surface block sets one: agents
@@ -29,6 +34,10 @@ ROLES_DIR="$AGENTS_DIR/roles"
 
 [[ -f "$AGENTS_DIR/agentsync.conf" ]] && source "$AGENTS_DIR/agentsync.conf"
 CODEX_EXEC_PREFIX="${CODEX_EXEC_PREFIX:-}"
+
+DEFAULT_EFFORT="high"
+DEFAULT_MAX_TURNS_WRITE=150
+DEFAULT_MAX_TURNS_READ_ONLY=60
 
 surface="${1:?usage: gen_agents.sh <surface> <out_dir>}"
 out="${2:?usage: gen_agents.sh <surface> <out_dir>}"
@@ -105,12 +114,13 @@ skills_section() {
 toml_escape() { printf '%s' "$1" | sed -e 's/\\/\\\\/g' -e 's/"/\\"/g'; }
 
 emit_claude() {
-    local f="$1" name="$2" desc="$3" tier="$4" access="$5" skills="$6" blk
+    local f="$1" name="$2" desc="$3" effort="$4" access="$5" skills="$6" turns="$7" blk
     blk="$(fm_block "$f" claude)"
     echo "---"
     echo "name: $name"
     echo "description: $desc"
-    [[ -n "$tier" ]] && ! block_has "$blk" effort && echo "effort: $tier"
+    block_has "$blk" effort || echo "effort: $effort"
+    block_has "$blk" maxTurns || echo "maxTurns: $turns"
     if ! block_has "$blk" tools; then
         if [[ "$access" == "read-only" ]]; then yaml_list tools Read Grep Glob Bash
         else yaml_list tools Read Grep Glob Bash Edit Write; fi
@@ -137,7 +147,7 @@ emit_claude() {
 }
 
 emit_codex() {
-    local f="$1" name="$2" desc="$3" tier="$4" access="$5" skills="$6" blk b
+    local f="$1" name="$2" desc="$3" effort="$4" access="$5" skills="$6" turns="$7" blk b
     blk="$(fm_block "$f" codex)"
     b="$(skills_section "$skills")"
     if [[ -n "$CODEX_EXEC_PREFIX" ]]; then
@@ -162,7 +172,7 @@ $(body "$f")"
     fi
     echo "name = \"$(toml_escape "$name")\""
     echo "description = \"$(toml_escape "$desc")\""
-    [[ -n "$tier" ]] && ! block_has "$blk" model_reasoning_effort && echo "model_reasoning_effort = \"$tier\""
+    block_has "$blk" model_reasoning_effort || echo "model_reasoning_effort = \"$effort\""
     if ! block_has "$blk" sandbox_mode; then
         if [[ "$access" == "read-only" ]]; then echo 'sandbox_mode = "read-only"'
         else echo 'sandbox_mode = "workspace-write"'; fi
@@ -181,11 +191,12 @@ $(body "$f")"
 }
 
 emit_opencode() {
-    local f="$1" name="$2" desc="$3" tier="$4" access="$5" skills="$6" blk edit
+    local f="$1" name="$2" desc="$3" effort="$4" access="$5" skills="$6" turns="$7" blk edit
     blk="$(fm_block "$f" opencode)"
     echo "---"
     echo "description: $desc"
     block_has "$blk" mode || echo "mode: subagent"
+    block_has "$blk" steps || echo "steps: $turns"
     if ! block_has "$blk" permission; then
         [[ "$access" == "read-only" ]] && edit=deny || edit=allow
         echo "permission:"
@@ -203,7 +214,7 @@ emit_opencode() {
 }
 
 emit_github() {
-    local f="$1" name="$2" desc="$3" tier="$4" access="$5" skills="$6" blk
+    local f="$1" name="$2" desc="$3" effort="$4" access="$5" skills="$6" turns="$7" blk
     blk="$(fm_block "$f" github)"
     echo "---"
     echo "name: $name"
@@ -239,11 +250,16 @@ for f in "$ROLES_DIR"/*.md; do
     if [[ -n "$surfaces" ]] && ! list_items "$surfaces" | grep -qx "$surface"; then
         continue
     fi
-    tier="$(fm_get "$f" tier)"
+    effort="$(fm_get "$f" effort)"; [[ -n "$effort" ]] || effort="$(fm_get "$f" tier)"
+    effort="${effort:-$DEFAULT_EFFORT}"
     access="$(fm_get "$f" access)"; access="${access:-write}"
+    turns="$(fm_get "$f" maxTurns)"
+    if [[ -z "$turns" ]]; then
+        [[ "$access" == "read-only" ]] && turns=$DEFAULT_MAX_TURNS_READ_ONLY || turns=$DEFAULT_MAX_TURNS_WRITE
+    fi
     skills="$(fm_get "$f" skills)"
     [[ "$(list_items "$skills" | wc -l | tr -d ' ')" == "0" ]] && skills=""
-    "emit_$surface" "$f" "$name" "$desc" "$tier" "$access" "$skills" > "$out/$name$ext"
+    "emit_$surface" "$f" "$name" "$desc" "$effort" "$access" "$skills" "$turns" > "$out/$name$ext"
     n=$((n + 1))
 done
 echo "  generated $n $surface agent(s) from roles/"

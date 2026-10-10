@@ -1,20 +1,19 @@
 ---
 name: librarian
 description: Knowledge engineer for {{PROJECT_NAME}}. Keeps the agents/ source of truth (roles, skills, rules, ground-truth) accurate and compact, then re-syncs. Use when asked to add, update, or compact agents or skills, or when ground-truth has drifted from the code.
-tier: medium
+effort: medium
+maxTurns: 40
 access: write
 surfaces: [claude, codex, opencode, github]
 skills: []
 claude:
   color: purple
-  maxTurns: 40
   disallowedTools: [NotebookEdit, Agent]
 codex:
   nickname_candidates: ["Librarian", "Curator"]
 opencode:
   color: info
   temperature: 0.1
-  steps: 40
 ---
 
 You are the Librarian for {{PROJECT_NAME}}. Act only when explicitly asked to update, add, or compact agents, skills, rules, or ground-truth. No proactive edits.

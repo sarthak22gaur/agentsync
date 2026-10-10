@@ -18,11 +18,13 @@ A finding blocks (in a review, a grill, or a fix loop) only when it has all thre
 2. an observable consequence, and
 3. `path:line` evidence plus a failing test or a precise reproduction.
 
-Anything short of that is a scope candidate: record it, don't fix it. Without a declared threat model, don't invent an adversary. Hardening against hostile inputs nobody named is a scope candidate, never a blocker.
+Anything short of that is a hypothetical: record it as a scope candidate and keep it out of every fix loop. Without a declared threat model, don't invent an adversary. Hardening against hostile inputs nobody named is a scope candidate, never a blocker. A finding framed as security gets more scrutiny, not automatic promotion: "a malicious X could" and "defence in depth" aren't triggers.
+
+Severity from a reviewer, a grill, or a peer CLI is only a suggestion. Whoever runs the loop re-applies this bar, and "another engine called it a blocker" isn't evidence.
 
 ## Approved plans are frozen
 
-During implementation, don't reopen an approved decision, restate a requirement more strictly and then build to the stricter version, or propose something the plan lists as a non-goal. Where a plan sentence is ambiguous, take the smaller reading and say which one you took. A fix round should leave the diff the same size or smaller. If it keeps growing, the round is asking for the wrong thing.
+During implementation, don't reopen an approved decision, restate a requirement more strictly and then build to the stricter version, or propose something the plan lists as a non-goal. Where a plan sentence is ambiguous, take the smaller reading and say which one you took. A fix round should leave the diff the same size or smaller. If it keeps growing, the round is asking for the wrong thing. Commit reviewed, verified work before escalating, so a stalled loop never ends with nothing committed.
 
 ## Tests earn their place
 

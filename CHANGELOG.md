@@ -2,6 +2,26 @@
 
 Notable changes per release. Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning is [SemVer](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0] - 2026-10-10
+
+### Added
+- **New template skills**, written stack-agnostic with `<fill in: …>` markers for project specifics:
+  - `swarm` (opt-in): a coordinator session plus up to N lane sessions in git worktrees, each running `orchestrate` on one plan section. Covers the merge protocol (owned-paths check, duplication check, full verification, revert on red), interface change requests for shared contracts, the dependency frontier, a process budget for the shared local stack, the ledger, stalls, and cleanup.
+  - `port` (opt-in): porting behavior from a source system into the host. Tests first in vertical slices, behavior from the source and structure improved, an idiom map the project fills in, a semantic-traps checklist, and a port log. Issues spotted elsewhere in the host are logged, never fixed there.
+  - `diagnosing-bugs`: a feedback-loop-first debugging discipline (build a red-capable loop, reproduce, minimise, hypothesise, instrument, fix with a regression test, clean up), with a human-in-the-loop script template.
+  - `cleanup-loop`: an audit → triage → fix → verify cycle against concrete criteria, capped at 3 rounds.
+  - `handoff`: a compact handoff document for a fresh session after a context reset or compaction.
+- **Rule** `durable-references`: plans, phase labels, grill rounds, handoffs, ledgers, and port logs stay out of code, comments, test names, branches, commits, and PRs. It replaces and broadens the "Plans stay private" section of `plan-before-code`.
+- **Code-quality ladder** in the engineer role (reuse the codebase, then the stdlib or framework, then an existing dependency, then the minimum code). It governs how code is written and never cuts approved scope. The code-reviewer checks against it, names a concrete failure case for every finding, and greps every caller of a changed signature.
+- `gen_agents.sh` reads per-role `effort` (`tier` still works) and `maxTurns` (Claude `maxTurns`, OpenCode `steps`), defaulting to `high` and 150 turns, or 60 for read-only roles. Per-surface keys still override. Role templates now set both at the top level.
+- `agentsync.conf`: `SKILLS_DECLINED`, so reconcile stops offering optional skills the user declined.
+- Bootstrap offers the new skills (`swarm` and `port` opt-in, the rest by default) and fills `<fill in: …>` markers it can ground. Reconcile detects missing template skills, recognizes a project's own variant as a customization rather than a gap, and never copies over an existing skill.
+
+### Changed
+- `orchestrate`: a subagent model policy. Claude subagents inherit one model and their role's effort and are never overridden per spawn. Model tiering by phase complexity applies only to a client whose spawns take a model, such as Codex, and reviewers and the architect always run the strongest. It also points lane-structured plans to `swarm` and runs a multi-repo peer gate from the workspace root.
+- `grill-converge`: each round spawns exactly one grill subagent (never inline), demands its final report, and needs the BLOCKER + MAJOR count to fall every round, with no fourth round. The peer gate checks cited claims and runs from the workspace root in a multi-repo workspace. `grill-plan` adds the "don't manufacture a MAJOR" line and a `scope increase` field.
+- `scope-discipline`: a security framing isn't a trigger, any engine's severity is only a suggestion, and reviewed, verified work is committed before escalating.
+
 ## [0.3.1] - 2026-09-30
 
 ### Fixed
